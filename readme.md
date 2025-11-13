@@ -4,7 +4,7 @@
 
 ## Overview
 This repository will contain an implementation of a domain-specific language(DSL) for representing simplicial complexes.
-The language will first be implemented in order to represent simplicial complexes in a mathematical meaningful way, with operations of glueing and union of complexes. I will do some work in order to let the complexes of dimension 2 and 3 be visualized.
+The language will first be implemented in order to represent simplicial complexes in a mathematical meaningful way, with operations of glueing and union of complexes. I will do some work in order to let the complexes of dimension less than 3 be visualized.
 But the main goal of this project is to calculate topological proprieties of the represented simplicial complexes: such as homology groups, Betti numbers, Euler characteristic, etc.
 In order to do that I will also need to add the possibility to represent chain complexes and boundary operators.
 I think I will do the implementation of these later after the midterm evaluation.
@@ -13,14 +13,14 @@ I think I will do the implementation of these later after the midterm evaluation
 
 In this section I will describe the architecture of the language, the main data objects and the operations that will be implemented.
 
-For clarity, here is the mathemtical definition of a simplicial complex which I will follow:
+In the matter of clarity, here is the mathemtical definition of a simplicial complex which I will follow:
  
-**Definitinon:** Given an ordered set $V$ called **vertices**, a **simplicial complex ** $K$ on is a collection of finite subsets of **V** called **simplices** such that:
-- For every **simplex** σ in $K$, every non-empty subset of σ is also in $K$.
+**Definitinon:** Given an ordered set $V$ called **vertices**, a **simplicial complex** $K$ is a collection of finite subsets of **V** called **simplices** such that:
+- For every **simplex** $\sigma$ in $K$, every non-empty subset of $\sigma$ is also in $K$.
 
 **Definition**: I will give some definitions of the objects that will be represented in the language:
-1. **Dimension**: The dimension of a simplex σ is defined as dim(σ) = |σ| - 1, where |σ| is the number of vertices in σ. The dimension of a simplicial complex K is the maximum dimension of its simplices.
-2. **n-skeleton**: The n-skeleton K_n of a a simplicial complex K is the subcomplex consisting of all simplces σ such that dim(σ) ≤ n.
+1. **Dimension**: The dimension of a simplex $\sigma$ is defined as $dim(\sigma) = |\sigma| - 1$, where |$\sigma$| is the number of vertices in $\sigma$. The dimension of a simplicial complex K is the maximum dimension of its simplices.
+2. **n-skeleton**: The n-skeleton K_n of a a simplicial complex K is the subcomplex consisting of all simplces $\sigma$ such that dim($\sigma$) ≤ n.
 
 **Vertex**: A vertex will be represented as a unique identifier, such as an integer or a string. 
 In order to do topology calculations I will also need to store the total ordering of the vertices. 
@@ -43,20 +43,29 @@ For example:
     simplex S2 = {B, C}
 ```
 
+It is important to note that simplecs respect the propriety that every non-empty subset of a simplex is also a simplex, and so the real meaning of 
+
+```
+    simplex S1 = {A, B, C}
+```
+is that S1 is a complex which contains the simplices {A, B, C}, {A, B}, {A, C}, {B, C}, {A}, {B}, {C}.
+
 I will semantically check that the is no repeating vertices in the definition of simplex and store the ordering of the vertices, which will be used as a default ordering for the vertices.
+
 I think there will be no need to implement a definition of vertex, since they will be represented as unique identifiers, but I will think about it more, because maybe it could be useful a way to define an ordering of the vertices, before defining simplices.
 
 1. **Glue Simplicial Complexes**: Glue two simplicial complexes along a common subcomplex.
 For example:
- ```   complex K1 = {S1, S2}
-    complex K2 = {S3, S4}
+ ```   
     complex K3 = glue(K1, K2) along {S2, S4}
 ```
 
+I will need to semantically check that K1 and K2 share the simplices specified in the glue operation.
+ 
+
 1. **Union of Simplicial Complexes**: Create a new simplicial complex that is the union of two simplicial complexes.
 For example:
- ```   complex K1 = {S1, S2}
-    complex K2 = {S3, S4}
+ ```   
     complex K3 = union(K1, K2)
 ```
 
@@ -74,6 +83,8 @@ But the strongest result I know is that:
 Every simplicial complex $K$ such that $dim(K) = n$ can be embedded in $\mathbb{R}^{2n+1}$. 
 
 This means that, even if I found a way to visualize simplicial complexes of dimension 2 and 3, the visualization will not be always topologically faithful, since there could be intersections between simplices which are not present in the actual simplicial complex.
+
+My idea is not easy to implement, but I think it could be fun to try to do it, I have to find a way to choose the coordinates of the vertices in order to have connected simplices near each other and minimize intersections.
 
 ### Future Work
 In the future, I plan to implement the following operations for calculating topological properties of simplicial complexes:
