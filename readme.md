@@ -1,8 +1,8 @@
-# IMPLEMENTATION OF A LANGUAGE FOR THE SPECIFIC DOMAIN OF SIMPLICIAL COMPLEXES
+# LANGUAGE FOR THE SPECIFIC DOMAIN OF SIMPLICIAL COMPLEXES
 
 ### Simone Riccio
 
-## Overview
+# Overview
 This repository will contain an implementation of a domain-specific language(DSL) for representing simplicial complexes.
 The language will first be implemented in order to represent simplicial complexes in a mathematical meaningful way, with operations of glueing and union of complexes, I will also attempt to implement a way to visualize complexes of dimneison up to 3 in a 3d scene.
 For the midterm version of the project I will focus on the representation of simplicial complexes and the operations to create new complexes from existing ones.
@@ -20,7 +20,7 @@ In the matter of clarity, here is the mathematical definition of a simplicial co
 
 **Definition**: I will give some definitions of the objects that will be represented in the language:
 1. **Dimension**: The dimension of a simplex $\sigma$ is defined as $dim(\sigma) = |\sigma| - 1$, where $|\sigma|$ is the number of vertices in $\sigma$. The dimension of a simplicial complex $K$ is the maximum dimension of its simplices.
-2. **n-skeleton**: The n-skeleton $K_n$ of a a simplicial complex $K$ is the subcomplex consisting of all simplces $\sigma$ such that $dim(\sigma) ≤ n $.
+2. **n-skeleton**: The n-skeleton $K^n$ of a a simplicial complex $K$ is the subcomplex consisting of all simplces $\sigma$ such that $dim(\sigma) ≤ n $.
 
 **Vertex**: A vertex will be represented as a unique identifier, such as an integer or a string. 
 In order to do topology calculations I will also need to store the total ordering of the vertices. 
@@ -94,4 +94,42 @@ In the future, I plan to implement the following operations for calculating topo
 3. **Implementing Chain Complexes and Boundary Operators**: Represent chain complexes and boundary operators to facilitate homology calculations.
 4. **Calculate (Simplicial) Homology Groups**: Compute the homology groups of a simplicial complex, providing insights into its topological structure, such as connected components, holes, and voids.
 
+# Implementation Details
+
+The language will be implemented in Python 3.13.
+
+## Project Structure
+The files of the project will be organized as follows:
+```
+- /src: Contains the source code of the language implementation.
+
+    - /visualization : Code related to 3D visualization.
+- /tests: Contains test cases for the language features and operations.
+- /readme.md: This readme file.
+- /docs: Documentation for the language.
+    - /mathematics.md: Mathematical definitions and concepts.
+    - /semantics.md: Denotational semantics of the language.
+```
+
+The project will use the following libraries:
+    - lark-parser: For parsing the DSL syntax.
+
+## Sintax analysis
+The parser will be implemented using the Lark library, which is a modern parsing library for Python.
+
+Here the definition of the grammar of the language in EBNF notation:
+
+```
+program   ::= statement*
+statement ::= simplex_stmt | complex_stmt | vertices_stmt
+simplex_stmt ::= "simplex" ID "=" "[" id_list "]"
+complex_stmt ::= "complex" ID "=" ( "union(" ID "," ID ")" | "glue(" ID "," ID ")" "mapping" mapping_block | ID )
+id_list  ::= IDENT ("," IDENT)*
+mapping_block ::= "{" mapping_list "}"
+mapping_list ::= IDENT "->" IDENT ("," IDENT "->" IDENT)*
+
+IDENT ::= /[a-zA-Z_][a-zA-Z0-9_]*/
+````
+
+## Semantic Analysis
 
