@@ -4,23 +4,23 @@
 
 ## Overview
 This repository will contain an implementation of a domain-specific language(DSL) for representing simplicial complexes.
-The language will first be implemented in order to represent simplicial complexes in a mathematical meaningful way, with operations of glueing and union of complexes. I will do some work in order to let the complexes of dimension less than 3 be visualized.
-But the main goal of this project is to calculate topological proprieties of the represented simplicial complexes: such as homology groups, Betti numbers, Euler characteristic, etc.
-In order to do that I will also need to add the possibility to represent chain complexes and boundary operators.
-I think I will do the implementation of these later after the midterm evaluation.
+The language will first be implemented in order to represent simplicial complexes in a mathematical meaningful way, with operations of glueing and union of complexes, I will also attempt to implement a way to visualize complexes of dimneison up to 3 in a 3d scene.
+For the midterm version of the project I will focus on the representation of simplicial complexes and the operations to create new complexes from existing ones.
+In the future, I plan to implement operations to calculate topological properties of simplicial complexes, such as homology groups.
+
 
 ## Language Architecture
 
 In this section I will describe the architecture of the language, the main data objects and the operations that will be implemented.
 
-In the matter of clarity, here is the mathemtical definition of a simplicial complex which I will follow:
+In the matter of clarity, here is the mathematical definition of a simplicial complex which I will follow:
  
 **Definitinon:** Given an ordered set $V$ called **vertices**, a **simplicial complex** $K$ is a collection of finite subsets of **V** called **simplices** such that:
 - For every **simplex** $\sigma$ in $K$, every non-empty subset of $\sigma$ is also in $K$.
 
 **Definition**: I will give some definitions of the objects that will be represented in the language:
-1. **Dimension**: The dimension of a simplex $\sigma$ is defined as $dim(\sigma) = |\sigma| - 1$, where |$\sigma$| is the number of vertices in $\sigma$. The dimension of a simplicial complex K is the maximum dimension of its simplices.
-2. **n-skeleton**: The n-skeleton K_n of a a simplicial complex K is the subcomplex consisting of all simplces $\sigma$ such that dim($\sigma$) ≤ n.
+1. **Dimension**: The dimension of a simplex $\sigma$ is defined as $dim(\sigma) = |\sigma| - 1$, where $|\sigma|$ is the number of vertices in $\sigma$. The dimension of a simplicial complex $K$ is the maximum dimension of its simplices.
+2. **n-skeleton**: The n-skeleton $K_n$ of a a simplicial complex $K$ is the subcomplex consisting of all simplces $\sigma$ such that $dim(\sigma) ≤ n $.
 
 **Vertex**: A vertex will be represented as a unique identifier, such as an integer or a string. 
 In order to do topology calculations I will also need to store the total ordering of the vertices. 
@@ -39,28 +39,29 @@ The following operations will be implemented in the MIDTERM version of the proje
 1. **Define Simplex**: Create a simplex by specifying its vertices.
 For example:
  ```
-    simplex S1 = {A, B, C}
-    simplex S2 = {B, C}
+    simplex S1 = [A, B, C]
+    simplex S2 = [D, E]
 ```
 
-It is important to note that simplecs respect the propriety that every non-empty subset of a simplex is also a simplex, and so the real meaning of 
+It is important to note that simpleces respect the propriety that every non-empty subset of a simplex is also a simplex, and so the real meaning of 
 
 ```
-    simplex S1 = {A, B, C}
+    simplex S1 = [A, B, C]
 ```
 is that S1 is a complex which contains the simplices {A, B, C}, {A, B}, {A, C}, {B, C}, {A}, {B}, {C}.
 
-I will semantically check that the is no repeating vertices in the definition of simplex and store the ordering of the vertices, which will be used as a default ordering for the vertices.
+I will semantically check that the is no repeating vertices and store the ordering of the vertices, which will be used as a default ordering for the vertices.
 
-I think there will be no need to implement a definition of vertex, since they will be represented as unique identifiers, but I will think about it more, because maybe it could be useful a way to define an ordering of the vertices, before defining simplices.
+I think there is no need to implement a "vertex" construct, since they will be represented as unique identifiers, but I will think about it more, because maybe it could be useful a way to define an ordering of the vertices, before defining simplices.
 
 1. **Glue Simplicial Complexes**: Glue two simplicial complexes along a common subcomplex.
 For example:
  ```   
-    complex K3 = glue(K1, K2) along {S2, S4}
+    complex K3 = glue(K1, K2) mapping {A1 -> A2, B1 -> B2}
 ```
 
 I will need to semantically check that K1 and K2 share the simplices specified in the glue operation.
+In order to obtain the glued complex I will need to represent vertices as equivalence classes, glueing two simplicial complexes will merge the equivalence classes of the vertices which are identified by the glueing operation.
  
 
 1. **Union of Simplicial Complexes**: Create a new simplicial complex that is the union of two simplicial complexes.
@@ -88,8 +89,9 @@ My idea is not easy to implement, but I think it could be fun to try to do it, I
 
 ### Future Work
 In the future, I plan to implement the following operations for calculating topological properties of simplicial complexes:
-1. **Calculate baricentric subdivision**: Implement an operation to compute the barycentric subdivision of a simplicial complex, which is classically useful for some proofs, but here I think will just be a funny operation to have.
-2. **Implementing Chain Complexes and Boundary Operators**: Represent chain complexes and boundary operators to facilitate homology calculations.
-3. **Calculate (Simplicial) Homology Groups**: Compute the homology groups of a simplicial complex, providing insights into its topological structure, such as connected components, holes, and voids.
+1. **More operations to have simplicial complexes**: Implement more operations to create simplicial complexes, such as taking the join or product of two simplicial complexes or the one point suspension.
+2. **Calculate baricentric subdivision**: Implement an operation to compute the barycentric subdivision of a simplicial complex, which is classically useful for some proofs, but here I think will just be a funny operation to have.
+3. **Implementing Chain Complexes and Boundary Operators**: Represent chain complexes and boundary operators to facilitate homology calculations.
+4. **Calculate (Simplicial) Homology Groups**: Compute the homology groups of a simplicial complex, providing insights into its topological structure, such as connected components, holes, and voids.
 
 
