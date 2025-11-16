@@ -11,9 +11,11 @@ Each element of V is called a **vertex**.
 
 **Definition:**
 A **simplicial complex** $ K $ is a collection of finite subsets of V called **simplices** such that:
+
 $$
     \text{For each } \sigma \in K \text{ and } \tau \subseteq \sigma, \text{} \tau \in K.
 $$
+
 Each element $ \sigma \in K $ is called a **simplex**.
 So a simplicial complex is a set of simplices closed under the operation of taking non-empty subsets.
 
@@ -36,10 +38,13 @@ $$
 $$
 
 **Definition(Dimension of a Simplicial Complex):**
+
 $$
     dim(K) = \max_{\sigma \in K} dim(\sigma).
 $$
+
 **Definition(n-skeleton):**
+
 $$
     K^n := \{\sigma \in K : dim(\sigma) \leq n\}
 $$
