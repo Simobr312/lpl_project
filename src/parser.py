@@ -17,7 +17,7 @@ grammar = r"""
     mapping_list: mapping_pair ("," mapping_pair)*
     mapping_pair: IDENT "->" IDENT
 
-    OP: "union" | "glue" | "join"
+    OP: /[A-Za-z_][A-Za-z]*/
     IDENT: /[A-Za-z_][A-Za-z0-9_]*/
 
     %import common.WS
@@ -29,13 +29,12 @@ parser = Lark(grammar, start="program")
 # AST dataclasses
 
 
-type Vertex = str
-type Complex = FrozenSet[Vertex]
+type VertexName = str
 
 @dataclass
 class SimplexStmt:
     name: str
-    vertices: List[Vertex]
+    vertices: List[VertexName]
 
 
 @dataclass
