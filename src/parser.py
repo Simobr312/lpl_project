@@ -110,19 +110,9 @@ def transform_parse_tree(tree: Tree) -> Program:
 
 
 def parse_ast(source_code: str) -> Program:
+
     parse_tree = parser.parse(source_code)
-    print(parse_tree.pretty())
+
     ast = transform_parse_tree(parse_tree)
+
     return ast
-
-# Example usage
-source = """
-simplex S1 = [v1, v2, v3]
-simplex S2 = [v4, v5]
-complex C1 = union(S1, S2)
-complex C2 = join(S1, S2)
-complex C3 = glue(S1, S2) mapping {v1 -> v4, v2 -> v5}
-"""
-
-ast = parse_ast(source)
-print(ast)

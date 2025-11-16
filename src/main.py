@@ -7,14 +7,13 @@ from parser import VertexName, parse_ast, Statement, SimplexStmt, ComplexStmt
 from union_find import UnionFind
 
 
-
 vertices_order: List[VertexName] = []
 
 type Simplex = FrozenSet[VertexName]
 
 class Complex:
     maximal_simplices : Set[Simplex]
-    classes: UnionFind[VertexName]
+    uf: UnionFind[VertexName]
 
     @property
     def dimension(self) -> int:
@@ -29,30 +28,22 @@ class Complex:
             verts.update(face)
         return verts
     
-    def __init__(self, maximal_simplices: Set[Simplex], classes: UnionFind[VertexName]) -> None:
+    def __init__(self, maximal_simplices: Set[Simplex], uf: UnionFind[VertexName]) -> None:
         self.maximal_simplices = maximal_simplices
-        self.classes = classes or UnionFind[VertexName]()
+        self.uf = uf or UnionFind[VertexName]()
 
-    def canonical_vertex(self, v: VertexName) -> VertexName:
-        return self.classes.find(v)
+    def get_classes(self) -> Dict[VertexName, Set[VertexName]]:
+        return self.uf.get_classes()
+    
     
     def __repr__(self) -> str:
-        reps: Dict[VertexName, Set[VertexName]] = {}
-        for v in self.vertices:
-            r = self.classes.find(v)
-            reps.setdefault(r, set()).add(v)
-
-        classes_str = ", ".join(
-            f"{repr(rep)}: {sorted(list(elems))}"
-            for rep, elems in reps.items()
-        )
-
+        
         return (
-            f"Complex(\n"
-            f"  dimension={self.dimension},\n"
-            f"  maximal_simplices={self.maximal_simplices},\n"
-            f"  classes={{ {classes_str} }}\n"
-            f")"
+        f"Complex(\n"
+        f"  dimension={self.dimension},\n"
+        f"  maximal_simplices={self.maximal_simplices},\n"
+        f"  classes={{ {self.get_classes()} }}\n"
+        f")"
         )
 
 
@@ -98,22 +89,22 @@ def build_complex_from_simplex_stmt(stmt: SimplexStmt) -> Complex:
     return Complex({simplex}, classes)
 
 def union(complex1: Complex, complex2: Complex) -> Complex:
-    new_classes = complex1.classes.merge(complex2.classes)
+    new_uf = complex1.uf.merge(complex2.uf)
     all_simplices = complex1.maximal_simplices.union(complex2.maximal_simplices)
 
-    return Complex(all_simplices, new_classes)
+    return Complex(all_simplices, new_uf)
+
 
 def glue(complex1: Complex, complex2: Complex, mapping: Dict[VertexName, VertexName]) -> Complex:
-    new_classes = complex1.classes.merge(complex2.classes)
+    new_uf = complex1.uf.merge(complex2.uf)
 
     for a, b in mapping.items():
-        new_classes.union(a, b)
+        new_uf.union(a, b)
 
     all_simplices: Set[Simplex] = set()
 
     for simplex in complex1.maximal_simplices | complex2.maximal_simplices:
-        canonical = frozenset(new_classes.find(v) for v in simplex)
-        all_simplices.add(canonical)
+        all_simplices.update(faces(simplex))
 
     maximal = set(all_simplices)
     for s1 in all_simplices:
@@ -121,7 +112,7 @@ def glue(complex1: Complex, complex2: Complex, mapping: Dict[VertexName, VertexN
             if s1 != s2 and s1.issubset(s2):
                 maximal.discard(s1)
 
-    return Complex(maximal, new_classes)
+    return Complex(maximal, new_uf)
 
 
 def eval_simplex_stmt(env: Environment, stmt: SimplexStmt) -> Environment:
@@ -162,14 +153,16 @@ def eval_program(statements) -> Environment:
 def main():
     source_code = """
         simplex S1 = [A, B, C]
-        simplex S2 = [D, E]
-        complex C2 = glue(S1, S2) mapping {C -> D, B -> E}
+        simplex S2 = [D, E, F]
+        complex C1 = union(S1, S2)
+        complex C2 = glue(S1, S2) mapping {B -> D, C -> E}
     """
 
     ast = parse_ast(source_code)
     env = eval_program(ast)
 
-    for name in ["S1", "S2", "C2"]:
+
+    for name in ["S1", "S2", "C1", "C2"]:
         complex_ = lookup(env, name)
         print(f"{name}: {complex_}")
 

@@ -1,3 +1,4 @@
+from __future__ import annotations
 from typing import Dict, Generic, Set, TypeVar
 
 T = TypeVar("T")
@@ -46,12 +47,10 @@ class UnionFind(Generic[T]):
 
     def merge(self, other: "UnionFind[T]") -> "UnionFind[T]":
         new_uf = UnionFind[T]()
-        
+
         for x in self.parent:
             new_uf.add(x)
-            new_uf.union(x, self.find(x))
-        
         for x in other.parent:
             new_uf.add(x)
-            new_uf.union(x, other.find(x))
+            
         return new_uf
