@@ -14,7 +14,7 @@ In the future, I plan to implement operations to calculate topological propertie
 In this section I will describe the architecture of the language, the main data objects and the operations that will be implemented.
 
 In the matter of clarity, here is the mathematical definition of a simplicial complex which I will follow:
- 
+
 **Definition:** Given an ordered set $V$ called **vertices**, a **simplicial complex** $K$ is a collection of finite subsets of **V** called **simplices** such that:
 - For every **simplex** $\sigma$ in $K$, every non-empty subset of $\sigma$ is also in $K$.
 
@@ -38,15 +38,15 @@ The following operations will be implemented in the MIDTERM version of the proje
 
 1. **Define Simplex**: Create a simplex by specifying its vertices.
 For example:
- ```
-    simplex S1 = [A, B, C]
-    simplex S2 = [D, E]
+```
+simplex S1 = [A, B, C]
+simplex S2 = [D, E]
 ```
 
 It is important to note that simplices respect the propriety that every non-empty subset of a simplex is also a simplex, and so the real meaning of 
 
 ```
-    simplex S1 = [A, B, C]
+simplex S1 = [A, B, C]
 ```
 is that S1 is a complex which contains the simplices {A, B, C}, {A, B}, {A, C}, {B, C}, {A}, {B}, {C}.
 
@@ -56,18 +56,18 @@ I think there is no need to implement a "vertex" construct, since they will be r
 
 1. **Glue Simplicial Complexes**: Glue two simplicial complexes along a common subcomplex.
 For example:
- ```   
-    complex K3 = glue(K1, K2) mapping {A1 -> A2, B1 -> B2}
+```   
+complex K3 = glue(K1, K2) mapping {A1 -> A2, B1 -> B2}
 ```
 
 I will need to semantically check that K1 and K2 share the simplices specified in the glue operation.
 In order to obtain the glued complex I will need to represent vertices as equivalence classes, glueing two simplicial complexes will merge the equivalence classes of the vertices which are identified by the glueing operation.
- 
+
 
 1. **Union of Simplicial Complexes**: Create a new simplicial complex that is the union of two simplicial complexes.
 For example:
- ```   
-    complex K3 = union(K1, K2)
+```   
+complex K3 = union(K1, K2)
 ```
 
 The glue operation is geometrically more meaningful than the union operation, but I will implement both for completeness.
@@ -103,16 +103,16 @@ The files of the project will be organized as follows:
 ```
 - /src: Contains the source code of the language implementation.
 
-    - /visualization : Code related to 3D visualization.
+- /visualization : Code related to 3D visualization.
 - /tests: Contains test cases for the language features and operations.
 - /readme.md: This readme file.
 - /docs: Documentation for the language.
-    - /mathematics.md: Mathematical definitions and concepts.
-    - /semantics.md: Denotational semantics of the language.
+- /mathematics.md: Mathematical definitions and concepts.
+- /semantics.md: Denotational semantics of the language.
 ```
 
 The project will use the following libraries:
-    - lark-parser: For parsing the DSL syntax.
+- lark-parser: For parsing the DSL syntax.
 
 ## Sintax analysis
 The parser will be implemented using the Lark library, which is a modern parsing library for Python.

@@ -5,79 +5,79 @@ In this file I will document the mathematical concepts and structures that I wil
 ## Simplicial Complexes
 
 **Definition:**:
-    The **vertices** are *countable ordered* set 
-    $$ V := \{v_1, v_2, \ldots, \} $$. 
-    Each element of V is called a **vertex**.
+The **vertices** are *countable ordered* set 
+$$ V := \{v_1, v_2, \ldots, \} $$. 
+Each element of V is called a **vertex**.
 
 **Definition:**
-    A **simplicial complex** $ K $ is a collection of finite subsets of V called **simplices** such that:
-    $$
-        \text{For each } \sigma \in K \text{ and } \tau \subseteq \sigma, \text{} \tau \in K.
-    $$
-    Each element $ \sigma \in K $ is called a **simplex**.
-    So a simplicial complex is a set of simplices closed under the operation of taking non-empty subsets.
+A **simplicial complex** $ K $ is a collection of finite subsets of V called **simplices** such that:
+$$
+    \text{For each } \sigma \in K \text{ and } \tau \subseteq \sigma, \text{} \tau \in K.
+$$
+Each element $ \sigma \in K $ is called a **simplex**.
+So a simplicial complex is a set of simplices closed under the operation of taking non-empty subsets.
 
 **Definition:**
-    A **geometric simplex** $ \Delta $ is the convex hull of a set of affine independent points in a Euclidean space.
-    A **geometric simplicial complex** $ \mathcal{K} $ is a collection of geometric simplices such that:
-        1. Every face of a simplex in the complex is also in the complex.
-        2. The intersection of any two simplices in the complex is either empty or a face of both simplices.
+A **geometric simplex** $ \Delta $ is the convex hull of a set of affine independent points in a Euclidean space.
+A **geometric simplicial complex** $ \mathcal{K} $ is a collection of geometric simplices such that:
+    1. Every face of a simplex in the complex is also in the complex.
+    2. The intersection of any two simplices in the complex is either empty or a face of both simplices.
 
 **Definition:**
 A **geometric realization** of a simplicial complex $ K $ is a geometric simplicial complex $ \mathcal{K} $ such that there is a bijection between the vertices of $ K $ and the vertices of $ \mathcal{K} $, and the simplices of $ K $ correspond to the geometric simplices of $ \mathcal{K} $.
 
 **Remark**:
-    It is clear that every **geometric simplicial complex** induces a **simplicial complex** by considering the set of vertices and the combinatorial structure of the simplices.
-    It is also true that every **simplicial complex** admits a **geometric realization** in some Euclidean space, but this fact will not be proved here.
+It is clear that every **geometric simplicial complex** induces a **simplicial complex** by considering the set of vertices and the combinatorial structure of the simplices.
+It is also true that every **simplicial complex** admits a **geometric realization** in some Euclidean space, but this fact will not be proved here.
 
 **Definition(Dimension):**
-    $$
-        dim(\sigma) = |\sigma| - 1,
-    $$
-    
+$$
+    dim(\sigma) = |\sigma| - 1,
+$$
+
 **Definition(Dimension of a Simplicial Complex):**
-    $$
-        dim(K) = \max_{\sigma \in K} dim(\sigma).
-    $$
+$$
+    dim(K) = \max_{\sigma \in K} dim(\sigma).
+$$
 **Definition(n-skeleton):**
-    $$
-        K^n := \{\sigma \in K : dim(\sigma) \leq n\}
-    $$
+$$
+    K^n := \{\sigma \in K : dim(\sigma) \leq n\}
+$$
 
 ### Operations on Simplicial Complexes
 
 The union of two simplicial complex is just their set-theoretic union, we are also always assuming that simplicial complexes are disjoint sets.
 
 **Definition:**
-    Given a subset of vertices $ U \subseteq V $, the **generated simplex** $ \sigma(U) $ is defined as:
+Given a subset of vertices $ U \subseteq V $, the **generated simplex** $ \sigma(U) $ is defined as:
 
-    $$
-        \sigma(U) := \{\sigma \in K : \sigma \subseteq U\}.
-    $$
+$$
+    \sigma(U) := \{\sigma \in K : \sigma \subseteq U\}.
+$$
 
-    It is clear that $ \sigma(U) $ is the smallest simplicial complex containing all vertices in $U$.
+It is clear that $ \sigma(U) $ is the smallest simplicial complex containing all vertices in $U$.
 **Definition:**
-    A function $f: K_1^0 \to K_2^0$ is **simplicial** if
+A function $f: K_1^0 \to K_2^0$ is **simplicial** if
 
-    $$
-        \{v_1, v_2, \ldots, v_k\} \in K_1 \implies \{f(v_1), f(v_2), \ldots, f(v_k)\} \in K_2
-    $$
+$$
+    \{v_1, v_2, \ldots, v_k\} \in K_1 \implies \{f(v_1), f(v_2), \ldots, f(v_k)\} \in K_2
+$$
 
-    and it induce a so called **simplicial map** between the simplicial complexes $ K $ and $ K' $.
-    A **simplicial isomorphism** is a bijective simplicial map whose inverse is also a simplicial map.
+and it induce a so called **simplicial map** between the simplicial complexes $ K $ and $ K' $.
+A **simplicial isomorphism** is a bijective simplicial map whose inverse is also a simplicial map.
 
 **Definition:**
-    Given two simplicial complexes $K_1, K_2$.
-    Two subcomplexes $L_1 \subseteq K_1$ and $L_2 \subseteq K_2$, and a simplicial isomorphism $f: L_1 \to L_2$.
-    The **glueing** of $K_1$ and $K_2$ along $f$ is the simplicial complex $ K_3 = K_1 \cup_f K_2$ defined as:
+Given two simplicial complexes $K_1, K_2$.
+Two subcomplexes $L_1 \subseteq K_1$ and $L_2 \subseteq K_2$, and a simplicial isomorphism $f: L_1 \to L_2$.
+The **glueing** of $K_1$ and $K_2$ along $f$ is the simplicial complex $ K_3 = K_1 \cup_f K_2$ defined as:
 
-    $$
-        K_3 := \frac{K_1 \cup K_2}{\sim}
-    $$
-    
-    where $ \sim $ is the equivalence relation generated by $ v \sim f(v) $ for all $ v \in L_1^0 $.
+$$
+    K_3 := \frac{K_1 \cup K_2}{\sim}
+$$
+
+where $ \sim $ is the equivalence relation generated by $ v \sim f(v) $ for all $ v \in L_1^0 $.
 
 
 ### References
-  1. Wikipedia page of "Abstract Simplicial Complex": https://en.wikipedia.org/wiki/Abstract_simplicial_complex
-  2. Allen Hatcher, "Algebraic Topology", Cambridge University Press, 2002.
+1. Wikipedia page of "Abstract Simplicial Complex": https://en.wikipedia.org/wiki/Abstract_simplicial_complex
+2. Allen Hatcher, "Algebraic Topology", Cambridge University Press, 2002.
