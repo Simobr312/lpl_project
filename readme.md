@@ -86,7 +86,7 @@ Every simplicial complex $K$ such that $dim(K) = n$ can be embedded in $\mathbb{
 
 This means that, even if I found a way to visualize simplicial complexes of dimension 2 and 3, the visualization will not be always topologically faithful, since there could be intersections between simplices which are not present in the actual simplicial complex.
 
-My idea is not easy to implement, but I think it could be fun to try to do it, I have to find a way to choose the coordinates of the vertices in order to have connected simplices near each other and minimize intersections.
+A friend of mine(@aziis98) suggested me to implement the visualization as a point cloud with spring costraints using SciPy to minimize the energy of an optimization problem.
 
 ### Future Work
 In the future, I plan to implement the following operations for calculating topological properties of simplicial complexes:
