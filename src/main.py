@@ -1,9 +1,8 @@
 from __future__ import annotations
-from dataclasses import dataclass
 from itertools import combinations
 from typing import List, Dict, Set, FrozenSet, Callable
 
-from parser import VertexName, parse_ast, Statement, SimplexStmt, ComplexStmt
+from parser import VertexName, parse_ast, Statement, ComplexDecl, ComplexStmt
 from union_find import UnionFind
 
 
@@ -12,6 +11,7 @@ vertices_order: List[VertexName] = []
 type Simplex = FrozenSet[VertexName]
 
 class Complex:
+    """A simplicial complex represented by its maximal simplices and a union-find structure for vertex identifications."""
     maximal_simplices : Set[Simplex]
     uf: UnionFind[VertexName]
 
@@ -68,27 +68,29 @@ def bind(env: Environment, name: str, value: DVal) -> Environment:
     return lambda n: value if n == name else env(n)
 
 def faces(simplex: Simplex):
+    """Generate all faces of a simplex."""
     s = list(simplex)
     for k in range(len(s) + 1):
         for combo in combinations(s, k):
                 yield frozenset(combo)
 
 
-def build_complex_from_simplex_stmt(stmt: SimplexStmt) -> Complex:
-    
+def build_complex_from_complex_decl(stmt: ComplexDecl) -> Complex:
+    """Builds a simplicial complex from a complex declaration."""
     for v in stmt.vertices:
         if v not in vertices_order:
             vertices_order.append(v)
         else:
             raise ValueError(f"You can not repeat two vertices declaration in the same program.")
 
-    simplex = frozenset(stmt.vertices)
+    complex = frozenset(stmt.vertices)
     classes = UnionFind[VertexName]()
     for v in stmt.vertices:
         classes.add(v)
-    return Complex({simplex}, classes)
+    return Complex({complex}, classes)
 
 def union(complex1: Complex, complex2: Complex) -> Complex:
+    """Returns the union of two simplicial complexes."""
     new_uf = complex1.uf.merge(complex2.uf)
     all_simplices = complex1.maximal_simplices.union(complex2.maximal_simplices)
 
@@ -96,6 +98,7 @@ def union(complex1: Complex, complex2: Complex) -> Complex:
 
 
 def glue(complex1: Complex, complex2: Complex, mapping: Dict[VertexName, VertexName]) -> Complex:
+    """Returns the result of gluing two simplicial complexes along a vertex mapping."""
     new_uf = complex1.uf.merge(complex2.uf)
 
     for a, b in mapping.items():
@@ -115,8 +118,8 @@ def glue(complex1: Complex, complex2: Complex, mapping: Dict[VertexName, VertexN
     return Complex(maximal, new_uf)
 
 
-def eval_simplex_stmt(env: Environment, stmt: SimplexStmt) -> Environment:
-    complex_ = build_complex_from_simplex_stmt(stmt)
+def eval_complex_decl(env: Environment, stmt: ComplexDecl) -> Environment:
+    complex_ = build_complex_from_complex_decl(stmt)
     return bind(env, stmt.name, complex_)    
 
 def eval_complex_stmt(env: Environment, stmt: ComplexStmt) -> Environment:
@@ -138,8 +141,8 @@ def eval_complex_stmt(env: Environment, stmt: ComplexStmt) -> Environment:
     return bind(env, stmt.name, result)
 
 def eval_stmt(env: Environment, stmt: Statement) -> Environment:
-    if isinstance(stmt, SimplexStmt):
-        return eval_simplex_stmt(env, stmt)
+    if isinstance(stmt, ComplexDecl):
+        return eval_complex_decl(env, stmt)
     if isinstance(stmt, ComplexStmt):
         return eval_complex_stmt(env, stmt)
     raise ValueError(f"Unknown statement type: {stmt}")
@@ -152,10 +155,10 @@ def eval_program(statements) -> Environment:
 
 def main():
     source_code = """
-        simplex S1 = [A, B, C]
-        simplex S2 = [D, E, F]
+        complex S1 = [A, B, C]
+        complex S2 = [D, E, F]
         complex C1 = union(S1, S2)
-        complex C2 = glue(S1, S2) mapping {B -> D, C -> E}
+        complex C2 = glue(S1, S2) mapping {F -> D, C -> E}
     """
 
     ast = parse_ast(source_code)
@@ -165,8 +168,6 @@ def main():
     for name in ["S1", "S2", "C1", "C2"]:
         complex_ = lookup(env, name)
         print(f"{name}: {complex_}")
-
-    
 
 if __name__ == "__main__":
     main()

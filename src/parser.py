@@ -5,13 +5,13 @@ from typing import Dict, List, FrozenSet
 # Parser grammar
 grammar = r"""
     ?program: statement*
-    statement: simplex_stmt | complex_stmt
+    statement:  complex_stmt
 
-    simplex_stmt: "simplex" IDENT "=" "[" id_list "]"
-    complex_stmt: "complex" IDENT "=" complex_expr
+    complex_stmt: "complex" IDENT "=" (complex_expr | vertices_list)
     complex_expr: OP "(" IDENT "," IDENT ")" ["mapping" mapping_block]
 
                 
+    vertices_list: "[" id_list "]"
     id_list: IDENT ("," IDENT)*
     mapping_block: "{" mapping_list "}"
     mapping_list: mapping_pair ("," mapping_pair)*
@@ -32,7 +32,7 @@ parser = Lark(grammar, start="program")
 type VertexName = str
 
 @dataclass
-class SimplexStmt:
+class ComplexDecl:
     name: str
     vertices: List[VertexName]
 
@@ -44,7 +44,7 @@ class ComplexStmt:
     args: List[str]
     mapping: Dict[str, str] | None = None
 
-type Statement = SimplexStmt | ComplexStmt
+type Statement = ComplexDecl | ComplexStmt
 type Program = List[Statement]
 
 
@@ -62,49 +62,37 @@ def transform_parse_tree(tree: Tree) -> Program:
         case Tree(data="statement", children=[stmt]):
             return transform_parse_tree(stmt)
         
-        case Tree(
-            data="simplex_stmt", 
-            children=[
-                Token(type="IDENT", value=name), 
-                id_list]
-            ):
-            match id_list:
+        case Tree(data="complex_stmt", 
+                  children=[
+                      Token(type="IDENT", 
+                            value=name), 
+                            rhs
+            ]):
+            match rhs:
+
+                case Tree(data="vertices_list", children=[id_list]):
+                    vertices = [tok.value for tok in id_list.children]
+                    return [ComplexDecl(name=name, vertices=vertices)]
+
                 case Tree(
-                    data="id_list", 
-                    children=ids
-                ):
-                    vertices = [token.value for token in ids]
-                case _:
-                    raise ValueError(f"Unexpected id_list structure.")
-            return [SimplexStmt(name=name, vertices=vertices)]
-        case Tree(
-            data = "complex_stmt", 
-            children = [
-                Token(type="IDENT", value=name), 
-                expr
-            ]
-        ):
-            match expr:
-                case Tree(
-                    data="complex_expr", 
+                    data="complex_expr",
                     children=[
-                        Token(type="OP", value = op),
-                        Token(type="IDENT", value=id1), 
+                        Token(type="OP", value=op),
+                        Token(type="IDENT", value=id1),
                         Token(type="IDENT", value=id2),
                         mapping_block
-                        ]):
+                    ]
+                ):
+                    mapping = None
+                    if mapping_block:
+                        mapping = {
+                            pair.children[0].value: pair.children[1].value
+                            for pair in mapping_block.children[0].children
+                        }
+                    return [ComplexStmt(name=name, op=op, args=[id1, id2], mapping=mapping)]
 
-                        mapping = {}
-                        
-                        if mapping_block:
-                            for pair in mapping_block.children[0].children:
-                                mapping[pair.children[0].value] = pair.children[1].value
-
-                        return [ComplexStmt(name=name, op=op, args=[id1, id2], mapping= mapping if mapping else None)]
-        
                 case _:
-                    raise ValueError(f"Unexpected complex expression: {expr}")
-            return [ComplexStmt(name=name, kind=kind, args=args, mapping=mapping)] 
+                    raise ValueError(f"Unexpected RHS for complex_stmt:")
         case _:
             raise ValueError(f"Unexpected parse tree node: {tree.pretty()}")
 
@@ -112,7 +100,11 @@ def transform_parse_tree(tree: Tree) -> Program:
 def parse_ast(source_code: str) -> Program:
 
     parse_tree = parser.parse(source_code)
-
     ast = transform_parse_tree(parse_tree)
 
     return ast
+
+source = """
+complex S1 = [A, B, C]"""
+
+print(parse_ast(source))
