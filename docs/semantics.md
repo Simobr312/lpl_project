@@ -6,7 +6,7 @@ The mathematical definitions of simplicial complexes and related concepts are pr
 The main domain of the language is the set of simplicial complexes.
 
 $$
-      Complex := \{K : K \text{is a simplicial complex}\}
+Complex := \{K : K \text{is a simplicial complex}\}
 $$
 
 A program denotes an enviroment mapping identifiers to simplicial complexes: ***Env*** : ***Identifier*** -> ***Complex***
@@ -16,11 +16,11 @@ $\rho(id)$ denotes the simplicial complex associated to the identifier $id$ in t
 The update of an environment $\rho$ with a new binding $x \mapsto K$ is denoted as $\rho[K / x]$ is the enviroment:
 
 $$
-      \rho[K / x](y) =
-      \begin{cases}
-      K & \text{if } y = x \\
-      \rho(y) & \text{otherwise}
-      \end{cases}
+\rho[K / x](y) =
+\begin{cases}
+K & \text{if } y = x \\
+\rho(y) & \text{otherwise}
+\end{cases}
 $$
 
 ## Denotational Semantics
@@ -29,7 +29,7 @@ A program is a sequence of statements $s_1; s_2; \ldots; s_n$.
 Given the empty environment $\rho_0$, the semantics of a program is defined as:
 
 $$
- \left[ s_1; s_2; \ldots; s_n \right](\rho_0) = \rho_n
+\left[ s_1; s_2; \ldots; s_n \right](\rho_0) = \rho_n
 $$
 
 **Simplex Statement**
