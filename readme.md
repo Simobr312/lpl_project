@@ -80,6 +80,7 @@ The visualization will be done only for simplicial complexes of dimension $\leq$
 There is a theorem which states that every simplicial complex of dimension 1, which is a way of representing graphs, can be embedded in the plane without crossings.
 
 But the strongest result I know is that:
+
 **Theorem**: 
 Every simplicial complex $K$ such that $dim(K) = n$ can be embedded in $\mathbb{R}^{2n+1}$. 
 
