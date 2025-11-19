@@ -77,11 +77,12 @@ def faces(simplex: Simplex):
 
 def build_complex_from_complex_decl(stmt: ComplexDecl) -> Complex:
     """Builds a simplicial complex from a complex declaration."""
-    for v in stmt.vertices:
-        if v not in vertices_order:
-            vertices_order.append(v)
-        else:
-            raise ValueError(f"You can not repeat two vertices declaration in the same program.")
+
+    l = len(vertices_order)
+    vertices_order.extend(stmt.vertices)
+    if(len(vertices_order) != l + len(stmt.vertices)):
+        raise ValueError(f"Duplicate vertex names in complex declaration: {stmt.vertices}")
+
 
     complex = frozenset(stmt.vertices)
     classes = UnionFind[VertexName]()

@@ -17,10 +17,10 @@ In the future, I plan to implement operations to calculate topological propertie
 
 This DSL implements the core mathematical notions of simplicial complexes and enforces their structural rules through semantic checks.
 
-A simplicial complex is defined over a totally ordered set of vertices $ V $.
+A simplicial complex is defined over a totally ordered set of vertices $V$.
 
 **Definition(Simplicial Complex):** 
-A simplicial complex $ K $ is a collection of finite subsets of $V$ called **simplices**, such that every non-empty subset of any simplex $ \sigma \in K $ is also a simplex in $ K $.
+A simplicial complex $K$ is a collection of finite subsets of $V$ called **simplices**, such that every non-empty subset of any simplex $\sigma \in K$ is also a simplex in $K$.
 
 **Definition**: 
 The **dimension** of a simplex $ \sigma $ is defined as $dim(\sigma) = |\sigma| - 1$, where $|\sigma|$ is the number of vertices in $\sigma$.
