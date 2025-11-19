@@ -23,7 +23,7 @@ A simplicial complex is defined over a totally ordered set of vertices $V$.
 A simplicial complex $K$ is a collection of finite subsets of $V$ called **simplices**, such that every non-empty subset of any simplex $\sigma \in K$ is also a simplex in $K$.
 
 **Definition**: 
-The **dimension** of a simplex $ \sigma $ is defined as $dim(\sigma) = |\sigma| - 1$, where $|\sigma|$ is the number of vertices in $\sigma$.
+The **dimension** of a simplex $\sigma$ is defined as $dim(\sigma) = |\sigma| - 1$, where $|\sigma|$ is the number of vertices in $\sigma$.
 The **dimension** of a simplicial complex $K$ is the maximum dimension among all its simplices.
 
 ### Representation
@@ -113,7 +113,7 @@ The files of the project will be organized as follows:
 The project will use the following libraries:
 - lark-parser: For parsing the DSL syntax.
 
-## Sintax analysis
+## Syntax analysis
 The parser is implemented using lark parsing library.
 
 The grammar of the language is defined as follows:

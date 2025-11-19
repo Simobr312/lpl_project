@@ -111,10 +111,14 @@ if __name__ == "__main__":
 
         complex K = glue(B, D) mapping {v1 -> v4, v2 -> v5}
 
+        complex L = [v7, v8, v9, v10]
+
+        complex M = glue(K, L) mapping {v3 -> v7, v6 -> v10}
+
     """
 
     ast = parse_ast(source_code)
     env = eval_program(ast)
 
-    K = lookup(env, "K")
+    K = lookup(env, "M")
     plot_complex_3d_glued(K)
