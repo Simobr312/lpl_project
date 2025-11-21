@@ -1,7 +1,12 @@
+import matplotlib
+# Force TkAgg backend for cross-platform interactive 3D plotting
+matplotlib.use("TkAgg")  # MUST be before pyplot import
+
 import numpy as np
 from itertools import combinations
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+from scipy.optimize import minimize
 
 from main import Complex, lookup, eval_program
 
@@ -9,11 +14,7 @@ from main import Complex, lookup, eval_program
 # Step 1: Canonical vertices
 # --------------------------
 def get_canonical_vertices(complex_):
-    """
-    Returns a mapping from each vertex to its canonical representative
-    according to the union-find structure.
-    """
-    vertex_classes = complex_.get_classes()  # {repr: set of vertices}
+    vertex_classes = complex_.get_classes()  # {rep: set of vertices}
     canonical_map = {}
     for rep, vertices in vertex_classes.items():
         for v in vertices:
@@ -26,7 +27,6 @@ def get_canonical_vertices(complex_):
 def get_edges_canonical(complex_):
     edges = set()
     canonical_map = get_canonical_vertices(complex_)
-    
     for simplex in complex_.maximal_simplices:
         canonical_simplex = [canonical_map[v] for v in simplex]
         for a, b in combinations(canonical_simplex, 2):
@@ -35,9 +35,9 @@ def get_edges_canonical(complex_):
     return list(edges)
 
 # --------------------------
-# Step 3: Spring layout
+# Step 3: Spring layout (3D)
 # --------------------------
-def assign_coordinates_canonical(vertices: list, edges: list):
+def assign_coordinates_canonical(vertices: list, edges: list, min_dist=0.5):
     n = len(vertices)
     vertex_index = {v: i for i, v in enumerate(vertices)}
     x0 = np.random.rand(n*3)
@@ -45,44 +45,69 @@ def assign_coordinates_canonical(vertices: list, edges: list):
     def energy(x):
         coords = x.reshape((n, 3))
         E = 0
+        # Edge lengths
         for v1, v2 in edges:
             i, j = vertex_index[v1], vertex_index[v2]
             dist = np.linalg.norm(coords[i] - coords[j])
             E += (dist - 1)**2
+        # Repulsion to prevent overlaps
+        for i in range(n):
+            for j in range(i+1, n):
+                dist = np.linalg.norm(coords[i] - coords[j])
+                if dist < min_dist:
+                    E += 1e2 * (min_dist - dist)**2
         return E
 
-    from scipy.optimize import minimize
-    res = minimize(energy, x0)
+    res = minimize(energy, x0, method='L-BFGS-B')
     coords = res.x.reshape((n, 3))
     return {v: coords[i] for i, v in enumerate(vertices)}
 
-# --------------------------
-# Step 4: Plotting
-# --------------------------
+
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+
 def plot_complex_3d_glued(complex_):
     canonical_map = get_canonical_vertices(complex_)
     canonical_vertices = list(set(canonical_map.values()))
-
     edges = get_edges_canonical(complex_)
     coords = assign_coordinates_canonical(canonical_vertices, edges)
 
-    fig = plt.figure()
+    fig = plt.figure("3D Glued Simplicial Complex")
     ax = fig.add_subplot(111, projection='3d')
 
+    # --------------------------
     # Draw edges
+    # --------------------------
     for v1, v2 in edges:
         x = [coords[v1][0], coords[v2][0]]
         y = [coords[v1][1], coords[v2][1]]
         z = [coords[v1][2], coords[v2][2]]
-        ax.plot(x, y, z, 'b-')
+        ax.plot(x, y, z, 'b-', alpha=0.7)
 
+    # --------------------------
+    # Draw faces for simplices of 3+ vertices
+    # --------------------------
+    for simplex in complex_.maximal_simplices:
+        # Convert to canonical representatives
+        canonical_simplex = [canonical_map[v] for v in simplex]
+        if len(canonical_simplex) < 3:
+            continue  # cannot form a face
+
+        # Get coordinates
+        face_coords = [coords[v] for v in canonical_simplex]
+        poly = Poly3DCollection([face_coords], alpha=0.2, facecolor='cyan', edgecolor='k')
+        ax.add_collection3d(poly)
+
+    # --------------------------
     # Draw vertices
+    # --------------------------
     xs = [coords[v][0] for v in canonical_vertices]
     ys = [coords[v][1] for v in canonical_vertices]
     zs = [coords[v][2] for v in canonical_vertices]
     ax.scatter(xs, ys, zs, c='r', s=50)
 
+    # --------------------------
     # Annotate vertices with all original names
+    # --------------------------
     for rep in canonical_vertices:
         original_names = [v for v, r in canonical_map.items() if r == rep]
         label = ",".join(original_names)
@@ -93,7 +118,7 @@ def plot_complex_3d_glued(complex_):
     plt.show()
 
 # --------------------------
-# Step 5: Example usage with your code
+# Step 5: Example usage
 # --------------------------
 if __name__ == "__main__":
     from parser import parse_ast
@@ -103,10 +128,14 @@ if __name__ == "__main__":
         complex S2 = [D, E, F]
         complex C1 = union(S1, S2)
         complex C2 = glue(S1, S2) mapping {B -> E, C -> F}
+
+        complex S3 = [G, H, I, J]
+
+        complex S4 = glue(S3, C1) mapping {I -> A, J -> D}
     """
 
     ast = parse_ast(source_code)
     env = eval_program(ast)
 
-    K = lookup(env, "C2")
+    K = lookup(env, "S4")
     plot_complex_3d_glued(K)
