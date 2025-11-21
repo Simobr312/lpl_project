@@ -97,28 +97,16 @@ def plot_complex_3d_glued(complex_):
 # --------------------------
 if __name__ == "__main__":
     from parser import parse_ast
-    # assuming you have eval_program, lookup, Complex etc. from your code
 
     source_code = """
-        complex a = [v1, v2]
-        complex b = [v2, v3]
-        complex c = [v3, v1]
-
-        complex D = [v4, v5, v6]
-
-        complex A = union(a, b)
-        complex B = union(A, c)
-
-        complex K = glue(B, D) mapping {v1 -> v4, v2 -> v5}
-
-        complex L = [v7, v8, v9, v10]
-
-        complex M = glue(K, L) mapping {v3 -> v7, v6 -> v10}
-
+        complex S1 = [A, B, C]
+        complex S2 = [D, E, F]
+        complex C1 = union(S1, S2)
+        complex C2 = glue(S1, S2) mapping {B -> E, C -> F}
     """
 
     ast = parse_ast(source_code)
     env = eval_program(ast)
 
-    K = lookup(env, "M")
+    K = lookup(env, "C2")
     plot_complex_3d_glued(K)

@@ -64,8 +64,8 @@ def initial_environment() -> Environment:
 def lookup(env: Environment, name: str) -> DVal:
     return env(name)
 
-def bind(env: Environment, name: str, value: DVal) -> Environment:
-    return lambda n: value if n == name else env(n)
+def bind(env: Environment, x: str, value: DVal) -> Environment:
+    return lambda y: value if y == x else env(y)
 
 def faces(simplex: Simplex):
     """Generate all faces of a simplex."""
@@ -90,33 +90,98 @@ def build_complex_from_complex_decl(stmt: ComplexDecl) -> Complex:
         classes.add(v)
     return Complex({complex}, classes)
 
-def union(complex1: Complex, complex2: Complex) -> Complex:
-    """Returns the union of two simplicial complexes."""
-    new_uf = complex1.uf.merge(complex2.uf)
-    all_simplices = complex1.maximal_simplices.union(complex2.maximal_simplices)
+def union(K1: Complex, K2: Complex) -> Complex:
+    """Returns the union of two simplicial complex"""
 
-    return Complex(all_simplices, new_uf)
+    common_vertices = set(K1.vertices) & set(K2.vertices)
 
+    for v in common_vertices:
+        for w in common_vertices:
+            k1_eq = (K1.uf.find(v) == K1.uf.find(w))
+            k2_eq = (K2.uf.find(v) == K2.uf.find(w))
 
-def glue(complex1: Complex, complex2: Complex, mapping: Dict[VertexName, VertexName]) -> Complex:
-    """Returns the result of gluing two simplicial complexes along a vertex mapping."""
-    new_uf = complex1.uf.merge(complex2.uf)
+            if k1_eq != k2_eq:
+                raise ValueError(
+                    f"Incompatible vertex identifications in union(): "
+                    f"{v} and {w} are equivalent in one complex but not the other."
+                )
+            
+    new_uf = K1.uf.merge(K2.uf)
+
+    new_simplices = set()
+
+    for σ in K1.maximal_simplices | K2.maximal_simplices:
+
+        canon = frozenset(new_uf.find(v) for v in σ)
+
+        if len(canon) != len(σ):
+            raise ValueError(
+                f"Union created a degenerate simplex: {σ} collapsed to {canon} "
+                f"because some vertices became identified."
+            )
+
+        new_simplices.add(canon)
+
+    return Complex(maximal_simplices=new_simplices, uf=new_uf)
+
+def glue(K1: Complex, K2: Complex, mapping: Dict[VertexName, VertexName]) -> Complex:
+    """Returns the glueing of two simplicial complexes along a vertex mapping, with full semantic checks."""
+
+    V1 = K1.vertices
+    V2 = K2.vertices
+
+    for a, b in mapping.items():
+        if a not in V1:
+            raise ValueError(f"glue(): vertex '{a}' is not in the first complex.")
+        if b not in V2:
+            raise ValueError(f"glue(): vertex '{b}' is not in the second complex.")
+
+    inv = {}
+    for a, b in mapping.items():
+        if a in inv and inv[a] != b:
+            raise ValueError(
+                f"glue(): vertex '{a}' is mapped to two different targets: "
+                f"{inv[a]} and {b}."
+            )
+        inv[a] = b
+
+    items = list(mapping.items())
+    for i in range(len(items)):
+        a1, b1 = items[i]
+        for j in range(i + 1, len(items)):
+            a2, b2 = items[j]
+            eq1 = K1.uf.find(a1) == K1.uf.find(a2)
+            eq2 = K2.uf.find(b1) == K2.uf.find(b2)
+
+            if eq1 != eq2:
+                raise ValueError(
+                    f"glue(): incompatible identifications: "
+                    f"{a1}~{a2} in K1 but {b1}~{b2} is "
+                    f"{'not ' if not eq2 else ''}true in K2."
+                )
+
+    new_uf = K1.uf.merge(K2.uf)
 
     for a, b in mapping.items():
         new_uf.union(a, b)
 
-    all_simplices: Set[Simplex] = set()
+    new_simplices = set()
 
-    for simplex in complex1.maximal_simplices | complex2.maximal_simplices:
-        all_simplices.update(faces(simplex))
+    for s in K1.maximal_simplices | K2.maximal_simplices:
 
-    maximal = set(all_simplices)
-    for s1 in all_simplices:
-        for s2 in all_simplices:
-            if s1 != s2 and s1.issubset(s2):
-                maximal.discard(s1)
+        canon = frozenset(new_uf.find(v) for v in s)
 
-    return Complex(maximal, new_uf)
+        # --- G5: no degenerate simplices ---
+        if len(canon) != len(s):
+            raise ValueError(
+                f"glue(): the simplex {s} collapsed to {canon} "
+                f"after vertex identifications."
+            )
+
+        new_simplices.add(canon)
+
+    return Complex(maximal_simplices=new_simplices, uf=new_uf)
+
 
 
 def eval_complex_decl(env: Environment, stmt: ComplexDecl) -> Environment:
@@ -159,7 +224,7 @@ def main():
         complex S1 = [A, B, C]
         complex S2 = [D, E, F]
         complex C1 = union(S1, S2)
-        complex C2 = glue(S1, S2) mapping {F -> D, C -> E}
+        complex C2 = glue(S1, S2) mapping {B -> E, C -> F}
     """
 
     ast = parse_ast(source_code)

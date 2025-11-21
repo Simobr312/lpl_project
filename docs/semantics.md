@@ -9,10 +9,11 @@ $$
       Complex := \{K : K \text{is a simplicial complex}\}
 $$
 
-A program denotes an enviroment mapping identifiers to simplicial complexes: ***Env*** : ***Identifier*** -> ***Complex***
+A program denotes an enviroment mapping identifiers to simplicial complexes: 
+***Env*** := ***Identifier*** -> ***Complex***
 
-Let $\rho$ be an environment.
-$\rho(id)$ denotes the simplicial complex associated to the identifier $id$ in the environment $\rho$.
+Let $\rho \in \text{Env}$
+$\rho(x)$ denotes the simplicial complex associated to the identifier $x$ in the environment $\rho$.
 The update of an environment $\rho$ with a new binding $x \mapsto K$ is denoted as $\rho[K / x]$ is the enviroment:
 
 $$
@@ -32,23 +33,23 @@ $$
  \left[ s_1; s_2; \ldots; s_n \right](\rho_0) = \rho_n
 $$
 
-**Simplex Statement**
+**Complex Declaration**
 
 $$
-\left[ simplex \ S = [v_1, v_2, \ldots, v_k] \right](\rho) = \rho[ \sigma(\{v_1, v_2, \ldots, v_k\}) / S]
+\left[ \text{complex} \ S = [v_1, v_2, \ldots, v_k] \right](\rho) = \rho[ \sigma(\{v_1, v_2, \ldots, v_k\}) / S]
 $$
 
 **Union Statement**
 
 $$
-\left[ complex \ C = union(A, B) \right](\rho) = \rho[(\rho(A) \cup \rho(B))/ C]
+\left[ \text{complex} \ C = \text{union}(A, B) \right](\rho) = \rho[(\rho(A) \cup \rho(B))/ C]
 $$
 
 
 **Glue Statement**
 
 $$
-\left[ complex \ C = glue(A, B) \ mapping \ \{v_{A1} \to v_{B1}, v_{A2} \to v_{B2}, \ldots, v_{An} \to v_{Bn}\} \right](\rho) = \rho[K / C]
+\left[ \text{complex} \ C = \text{glue}(A, B) \ \text{mapping} \{ a_1 \text{->} b_1, \cdots, a_n \text{->} b_n \} \right](\rho) = \rho[K / C]
 $$
 Where $K$ is the simplicial complex obtained by glueing $\rho(A)$ and $\rho(B)$ along the identified vertices.
 

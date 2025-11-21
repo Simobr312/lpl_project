@@ -103,8 +103,3 @@ def parse_ast(source_code: str) -> Program:
     ast = transform_parse_tree(parse_tree)
 
     return ast
-
-source = """
-complex S1 = [A, B, C]"""
-
-print(parse_ast(source))
