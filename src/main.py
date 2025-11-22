@@ -35,9 +35,7 @@ class Complex:
     def get_classes(self) -> Dict[VertexName, Set[VertexName]]:
         return self.uf.get_classes()
     
-    
     def __repr__(self) -> str:
-        
         return (
         f"Complex(\n"
         f"  dimension={self.dimension},\n"
@@ -48,24 +46,26 @@ class Complex:
 
 
 DVal = Complex
-type Environment = Callable[[str], DVal]
+#I changed the typing here from Callable to Dict in order to see the domain of the environment in the web server
+type Environment = Dict[str, DVal]
 
 def empty_environment() -> Environment:
-    def env(name: str) -> DVal:
-        raise ValueError(f"Undefined identifier: {name}")
-
-    return env
+    return dict()
 
 def initial_environment() -> Environment:
     env = empty_environment()
-    
     return env
 
 def lookup(env: Environment, name: str) -> DVal:
-    return env(name)
+    if name not in env:
+        raise ValueError(f"Undefined variable: {name}")
+
+    return env[name]
 
 def bind(env: Environment, x: str, value: DVal) -> Environment:
-    return lambda y: value if y == x else env(y)
+    new_env = env.copy()
+    new_env[x] = value
+    return new_env
 
 def faces(simplex: Simplex):
     """Generate all faces of a simplex."""
@@ -171,7 +171,6 @@ def glue(K1: Complex, K2: Complex, mapping: Dict[VertexName, VertexName]) -> Com
 
         canon = frozenset(new_uf.find(v) for v in s)
 
-        # --- G5: no degenerate simplices ---
         if len(canon) != len(s):
             raise ValueError(
                 f"glue(): the simplex {s} collapsed to {canon} "

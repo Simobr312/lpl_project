@@ -124,18 +124,28 @@ if __name__ == "__main__":
     from parser import parse_ast
 
     source_code = """
-        complex S1 = [A, B, C]
-        complex S2 = [D, E, F]
-        complex C1 = union(S1, S2)
-        complex C2 = glue(S1, S2) mapping {B -> E, C -> F}
+        // Costruzione del bordo di un tetraedro (Hollow Tetrahedron)
+        // Vertici: V1, V2, V3, V4
 
-        complex S3 = [G, H, I, J]
+        // Definiamo le 4 facce separatamente
+        complex face1 = [V1, V2, V3]
+        complex face2 = [V1, V2, V4]
+        complex face3 = [V2, V3, V4]
+        complex face4 = [V1, V3, V4]
 
-        complex S4 = glue(S3, C1) mapping {I -> A, J -> D}
+        // Uniamo le facce passo dopo passo
+        // Base + Faccia laterale 1
+        complex step1 = union(face1, face2)
+
+        // Aggiungiamo Faccia laterale 2
+        complex step2 = union(step1, face3)
+
+        // Aggiungiamo Faccia laterale 3 (Chiudiamo la forma)
+        complex tetrahedron_boundary = union(step2, face4)
     """
 
     ast = parse_ast(source_code)
     env = eval_program(ast)
 
-    K = lookup(env, "S4")
+    K = lookup(env, "tetrahedron_boundary")
     plot_complex_3d_glued(K)

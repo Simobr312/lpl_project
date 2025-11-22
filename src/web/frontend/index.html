@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Simplicial DSL Editor</title>
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Load Monaco AMD loader -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
+
+    <script>
+        // IMPORTANT: Monaco uses define/require in its own namespace
+        const monacoBase = "https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs";
+
+        // DO NOT attach to window.require
+        require.config({
+            paths: { vs: monacoBase }
+        });
+    </script>
+</head>
+
+<body>
+
+<header>
+    <h1>Simplicial Complex DSL Editor</h1>
+    <button id="runBtn">Run</button>
+</header>
+
+<main>
+    <div id="editorContainer" style="height:100%; width:60%;"></div>
+    <div id="outputPanel" style="width:40%;"> 
+        <h2>Output</h2>
+        <pre id="outputArea">{}</pre>
+    </div>
+</main>
+
+<script src="editor.js"></script>
+</body>
+</html>
+ 

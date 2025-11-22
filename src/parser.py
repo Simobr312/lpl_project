@@ -7,10 +7,10 @@ grammar = r"""
     ?program: statement*
     statement:  complex_stmt
 
+
     complex_stmt: "complex" IDENT "=" (complex_expr | vertices_list)
     complex_expr: OP "(" IDENT "," IDENT ")" ["mapping" mapping_block]
 
-                
     vertices_list: "[" id_list "]"
     id_list: IDENT ("," IDENT)*
     mapping_block: "{" mapping_list "}"
@@ -20,6 +20,9 @@ grammar = r"""
     OP: /[A-Za-z_][A-Za-z]*/
     IDENT: /[A-Za-z_][A-Za-z0-9_]*/
 
+    COMMENT: "//" /[^\n]/* | "\#" /(.|\n)*?/ 
+
+    %ignore COMMENT
     %import common.WS
     %ignore WS
 """
@@ -81,8 +84,7 @@ def transform_parse_tree(tree: Tree) -> Program:
                         Token(type="IDENT", value=id1),
                         Token(type="IDENT", value=id2),
                         mapping_block
-                    ]
-                ):
+                    ]):
                     mapping = None
                     if mapping_block:
                         mapping = {
