@@ -54,3 +54,35 @@ main {
     max-height: 95%;
     overflow-y: auto;
 }
+
+.output-card {
+    background: #1e1e1e;
+    color: #eee;
+    padding: 12px 16px;
+    margin-bottom: 12px;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+    border: 1px solid #333;
+}
+
+.output-card h3 {
+    margin-top: 0;
+    border-bottom: 1px solid #444;
+    padding-bottom: 4px;
+    margin-bottom: 8px;
+    font-size: 1.1rem;
+}
+
+.output-section {
+    margin-bottom: 6px;
+}
+
+.output-section-title {
+    font-weight: bold;
+    color: #9cdcfe;
+}
+
+.output-list {
+    margin-left: 12px;
+}
+

@@ -25,7 +25,48 @@ document.getElementById("runBtn").addEventListener("click", async () => {
 
     const result = await response.json();
 
-    outputArea.textContent = result.success
-        ? JSON.stringify(result.complexes, null, 2)
-        : "Error:\n" + result.error;
+    if (!result.success) {
+        outputArea.innerHTML = `<div class="output-card"><h3>Error</h3><pre>${result.error}</pre></div>`;
+        return;
+    }
+
+    const complexes = result.complexes;
+    outputArea.innerHTML = "";
+
+    for (const [name, complex] of Object.entries(complexes)) {
+
+    const card = document.createElement("div");
+    card.className = "output-card";
+
+    const cardInfo = document.createElement("div");
+    cardInfo.className = "output-card-info";
+    cardInfo.innerHTML = (`
+        <h3>${name}</h3>
+        <span class="output-section-title">Vertices:</span>
+        <span class="output-list">${complex.vertices.join(", ")}</span>
+
+        <span class="output-section-title">Simplices:</span>
+        <span class="output-list">
+            ${complex.simplices.map(s => `[${s.join(", ")}]`)}
+        </span>
+
+        <span class="output-section-title">Classes:</span>
+        <span class="output-list">
+            ${Object.entries(complex.classes)
+                .map(([k, v]) => `${k} → [${v.join(", ")}]`)}
+        </span>
+    `);
+
+    const renderBtn = document.createElement("button");
+    renderBtn.textContent = "Render";
+    renderBtn.style.marginTop = "10px";
+    renderBtn.addEventListener("click", () => {
+        window.renderComplex3D(complex);
+    });
+
+    card.appendChild(renderBtn);
+    card.appendChild(cardInfo);
+    outputArea.appendChild(card);
+}
+
 });
