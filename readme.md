@@ -54,7 +54,15 @@ complex S1 = [A, B, C]
 ```
 is that S1 is a complex which contains the simplices {A, B, C}, {A, B}, {A, C}, {B, C}, {A}, {B}, {C}.
 
-1. **Glue Simplicial Complexes**: 
+1. **Union of Simplicial Complexes**: 
+Create a new simplicial complex that is the set-theoretic union of two simplicial complexes.
+For example:
+```   
+complex K3 = union(K1, K2)
+```
+
+
+2. **Glue Simplicial Complexes**: 
 Create a new simplicial complex by gluing two simplicial complexes along specified vertices.
 
 For example:
@@ -65,24 +73,18 @@ complex K3 = glue(K1, K2) mapping {A1 -> A2, B1 -> B2}
 Gluing identifies specified vertices of one complex with those of another.
 Internally, the implementation merges the corresponding equivalence classes of vertices, producing a valid merged complex.
 
-
-1. **Union of Simplicial Complexes**: 
-Create a new simplicial complex that is the set-theoretic union of two simplicial complexes.
-For example:
-```   
-complex K3 = union(K1, K2)
+It is possible to nest operations, for example:
 ```
-
+complex K4 = union(K1, glue(K2, K3) mapping {C2 -> D3})
+```
 ### Geometry and Visualization
 
-The current version does not implement geometric visualization.
-
-Future plans include a web editor with a 3D camera with basic controls for rotation and zoom.
-Visualization will be limited to complexes of dimension $\leq$ 3.
-
 Due to embedding constraints, the visualization may not always be topologically faithful.
+The current version includes an online editor for the language which also provides a 3D visualization of the simplicial complexes defined in the code.
 
-In order to determinate vertex coordinates, a friend of mine suggested me to treat it as a problem of spring constraints using SciPy to minimize the energy of the system and so find a good configuration of the vertices in the 3D space.
+In order to determinate vertex coordinates, a friend of mine suggested me to treat it as a problem of spring constraints, so I implemented a simple physics engine that simulates springs between connected vertices to find a visually appealing layout in JavaScript for the 3D visualization.
+
+The main tool for the rendering is Three.js.
 
 ### Future Work
 In the future, I plan to implement the following operations to calculate topological properties of simplicial complexes:
@@ -101,17 +103,21 @@ The files of the project will be organized as follows:
 - /src: Contains the source code of the language implementation.
     - /parser.py: Code for parsing the DSL syntax.
     - /main.py: Main interpreter and semantic analysis.
-
     - /visualization : Code related to 3D visualization.
-- /tests: Contains test cases for the language features and operations.
+        -/frontend: Frontend code for visualization using Three.js.
+        -server.py: Backend server to serve the visualization.
+- /examples: Contains code examples demonstrating the language features.
 - /readme.md: This readme file.
 - /docs: Documentation for the language.
     - /mathematics.md: Mathematical definitions and concepts.
     - /semantics.md: Denotational semantics of the language.
 ```
 
-The project will use the following libraries:
+The project will is using the following libraries:
+In Python
 - lark-parser: For parsing the DSL syntax.
+In JavaScript
+- Three.js: For 3d rendering of the simplicial complexes
 
 ## Syntax analysis
 The parser is implemented using lark parsing library.

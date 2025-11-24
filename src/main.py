@@ -2,10 +2,11 @@ from __future__ import annotations
 from itertools import combinations
 from typing import List, Dict, Set, FrozenSet, Callable
 
-from parser import VertexName, parse_ast, Statement, ComplexDecl, ComplexStmt
+from parser import Expr, OpExpr, Ref, Program, ComplexDeclVtx, ComplexDeclExpr, Statement, parse_ast
 from union_find import UnionFind
 
 
+type VertexName = str
 vertices_order: List[VertexName] = []
 
 type Simplex = FrozenSet[VertexName]
@@ -44,8 +45,10 @@ class Complex:
         f")"
         )
 
+# == ENVIRONMENT == #
 
-DVal = Complex
+type DenOperator = Callable[..., Complex]
+type DVal = Complex | DenOperator
 #I changed the typing here from Callable to Dict in order to see the domain of the environment in the web server
 type Environment = Dict[str, DVal]
 
@@ -54,12 +57,15 @@ def empty_environment() -> Environment:
 
 def initial_environment() -> Environment:
     env = empty_environment()
+
+    env = bind(env, "union", union)
+    env = bind(env, "glue", glue)
+
     return env
 
 def lookup(env: Environment, name: str) -> DVal:
     if name not in env:
-        raise ValueError(f"Undefined variable: {name}")
-
+        raise ValueError(f"Undefined symbol: {name}")
     return env[name]
 
 def bind(env: Environment, x: str, value: DVal) -> Environment:
@@ -74,10 +80,10 @@ def faces(simplex: Simplex):
         for combo in combinations(s, k):
                 yield frozenset(combo)
 
+# == BUILDING == #
 
-def build_complex_from_complex_decl(stmt: ComplexDecl) -> Complex:
-    """Builds a simplicial complex from a complex declaration."""
-
+def build_complex_from_vtx(stmt: ComplexDeclVtx) -> Complex:
+    """Builds a simplicial complex from a vertex declaration."""
     l = len(vertices_order)
     vertices_order.extend(stmt.vertices)
     if(len(vertices_order) != l + len(stmt.vertices)):
@@ -85,14 +91,15 @@ def build_complex_from_complex_decl(stmt: ComplexDecl) -> Complex:
 
 
     complex = frozenset(stmt.vertices)
-    classes = UnionFind[VertexName]()
+    uf = UnionFind[VertexName]()
     for v in stmt.vertices:
-        classes.add(v)
-    return Complex({complex}, classes)
+        uf.add(v)
 
+    return Complex({complex}, uf)
+
+# == OPERATIONS == #
 def union(K1: Complex, K2: Complex) -> Complex:
     """Returns the union of two simplicial complex"""
-
     common_vertices = set(K1.vertices) & set(K2.vertices)
 
     for v in common_vertices:
@@ -181,56 +188,75 @@ def glue(K1: Complex, K2: Complex, mapping: Dict[VertexName, VertexName]) -> Com
 
     return Complex(maximal_simplices=new_simplices, uf=new_uf)
 
+# == EVALUATION == #
 
+def eval_expr(env: Environment, expr: Expr) -> Complex:
+    if isinstance(expr, Ref):
+        val = lookup(env, expr.name)
+        if isinstance(val, Complex):
+            return val
+        raise ValueError(f"Identifier '{expr.name}' is not a complex")
 
-def eval_complex_decl(env: Environment, stmt: ComplexDecl) -> Environment:
-    complex_ = build_complex_from_complex_decl(stmt)
-    return bind(env, stmt.name, complex_)    
+    if isinstance(expr, OpExpr):
+        op_fun = lookup(env, expr.op)
+        if not callable(op_fun):
+            raise ValueError(f"Identifier '{expr.op}' is not an operation")
 
-def eval_complex_stmt(env: Environment, stmt: ComplexStmt) -> Environment:
-    args = [lookup(env, name) for name in stmt.args]
+        K1 = eval_expr(env, expr.left)
+        K2 = eval_expr(env, expr.right)
 
-    match stmt.op:
-        case "union":
-            if len(args) != 2:
-                raise ValueError(f"Union operation requires exactly 2 arguments.")
-            result = union(args[0], args[1])
-        case "glue":
-            if len(args) != 2:
-                raise ValueError(f"Glue operation requires exactly 2 arguments.")
-            mapping = stmt.mapping or {}
-            result = glue(args[0], args[1], mapping)
-        case _:
-            raise ValueError(f"Unknown complex operation: {stmt.op}")
-        
-    return bind(env, stmt.name, result)
+        if expr.op == "glue":
+            if expr.mapping is None:
+                raise ValueError("glue operation requires a mapping")
+            return op_fun(K1, K2, expr.mapping)
+        else:
+            return op_fun(K1, K2)
+
+    raise TypeError("Unknown expr")
 
 def eval_stmt(env: Environment, stmt: Statement) -> Environment:
-    if isinstance(stmt, ComplexDecl):
-        return eval_complex_decl(env, stmt)
-    if isinstance(stmt, ComplexStmt):
-        return eval_complex_stmt(env, stmt)
-    raise ValueError(f"Unknown statement type: {stmt}")
+    if isinstance(stmt, ComplexDeclVtx):
+        C = build_complex_from_vtx(stmt)
+        return bind(env, stmt.name, C)
 
-def eval_program(statements) -> Environment:
-    env = empty_environment()
+    if isinstance(stmt, ComplexDeclExpr):
+        C = eval_expr(env, stmt.expr)
+        return bind(env, stmt.name, C)
+
+    raise ValueError(f"Unknown statement: {stmt}")
+
+
+def eval_program(statements: Program) -> Environment:
+    env = initial_environment()
+    print(env)
     for stmt in statements:
         env = eval_stmt(env, stmt)
     return env
 
 def main():
     source_code = """
-        complex S1 = [A, B, C]
-        complex S2 = [D, E, F]
-        complex C1 = union(S1, S2)
-        complex C2 = glue(S1, S2) mapping {B -> E, C -> F}
-    """
+    // Tetrahedron vertices
+    complex V0 = [A, B, C, D]
+
+    // Boundary: union of all triangular faces
+    complex F1 = [A, B, C]
+    complex F2 = [A, B, D]
+    complex F3 = [A, C, D]
+    complex F4 = [B, C, D]
+
+    // Union all faces to form the boundary
+    complex TetBoundary = union(union(F1, F2), union(F3, F4))
+
+"""
 
     ast = parse_ast(source_code)
     env = eval_program(ast)
 
 
-    for name in ["S1", "S2", "C1", "C2"]:
+    for name in env.keys():
+        if callable(env[name]):
+            continue
+
         complex_ = lookup(env, name)
         print(f"{name}: {complex_}")
 

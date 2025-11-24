@@ -1,0 +1,20 @@
+// Octahedron vertices
+complex N = [N]
+complex S = [S]
+complex E = [E]
+complex W = [W]
+complex F = [F]
+complex B = [B]
+
+// Faces of the octahedron (triangles)
+complex F1 = [N, E, F]
+complex F2 = [N, F, W]
+complex F3 = [N, W, B]
+complex F4 = [N, B, E]
+complex F5 = [S, E, F]
+complex F6 = [S, F, W]
+complex F7 = [S, W, B]
+complex F8 = [S, B, E]
+
+// Union all faces to get the spherical surface
+complex Sphere = union(union(union(F1, F2), union(F3, F4)), union(union(F5, F6), union(F7, F8)))

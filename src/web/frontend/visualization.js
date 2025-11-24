@@ -125,7 +125,7 @@ function makeTextSprite(message, parameters = {}) {
     const texture = new THREE.CanvasTexture(canvas);
     texture.needsUpdate = true;
 
-    const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
+    const material = new THREE.SpriteMaterial({map: texture, transparent: true });
     const sprite = new THREE.Sprite(material);
 
     sprite.scale.set(canvas.width / 100, canvas.height / 100, 1);

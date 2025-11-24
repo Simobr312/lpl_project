@@ -1,0 +1,11 @@
+// Tetrahedron vertices
+complex V0 = [A, B, C, D]
+
+// Boundary: union of all triangular faces
+complex F1 = [A, B, C]
+complex F2 = [A, B, D]
+complex F3 = [A, C, D]
+complex F4 = [B, C, D]
+
+// Union all faces to form the boundary
+complex TetBoundary = union(union(F1, F2), union(F3, F4))
