@@ -7,7 +7,9 @@ This repository provides a domain-specific language (DSL) for representing and m
 The language is designed to model simplicial complexes in a mathematically meaningful way, allowing users to define simplices, construct complexes, perform union and gluing operations, and reason about their structure.
 
 The current version focuses on the representation and construction of simplicial complexes.
-Future iterations will explore geometric visualization (up to dimension 3) and the computation of topological invariants.
+
+It also provides a web interface for visualizing the defined simplicial complexes in 3D.
+
 In the future, I plan to implement operations to calculate topological properties of simplicial complexes, such as homology groups.
 
 
@@ -124,15 +126,28 @@ The parser is implemented using lark parsing library.
 
 The grammar of the language is defined as follows:
 ```
-program   ::= statement*
-statement ::= simplex_stmt | complex_stmt | vertices_stmt
-simplex_stmt ::= "simplex" ID "=" "[" id_list "]"
-complex_stmt ::= "complex" ID "=" ( "union(" ID "," ID ")" | "glue(" ID "," ID ")" "mapping" mapping_block | ID )
-id_list  ::= IDENT ("," IDENT)*
-mapping_block ::= "{" mapping_list "}"
-mapping_list ::= IDENT "->" IDENT ("," IDENT "->" IDENT)*
+?program: statement*
 
-IDENT ::= /[a-zA-Z_][a-zA-Z0-9_]*/
+    statement: "complex" IDENT "=" expr | "complex" IDENT "=" vertices_list
+
+    ?expr: operation | IDENT | "(" expr ")"
+
+    operation: OP "(" expr "," expr ")" ["mapping" mapping_block]
+
+    vertices_list: "[" id_list "]"
+    id_list: IDENT ("," IDENT)*
+
+    mapping_block: "{" mapping_list "}"
+    mapping_list: mapping_pair ("," mapping_pair)*
+    mapping_pair: IDENT "->" IDENT
+
+    OP: /[a-zA-Z_][a-zA-Z0-9_]*/
+    IDENT: /[A-Za-z_][A-Za-z0-9_]*/
+
+    COMMENT: "//" /[^\n]/* | "\#" /(.|\n)*?/
+    %ignore COMMENT
+    %import common.WS
+    %ignore WS      
 ````
 
 For more details, see `docs/semantic.md` and `docs/mathematics.md`.
