@@ -49,8 +49,8 @@ function springLayout3D(vertices, edges, iterations = 500) {
         z: Math.random()*2 - 1
     }));
 
-    const k = 1.0;
-    const repulsion = 0.2;
+    const k = 1;
+    const repulsion = 0.5;
 
     for (let iter = 0; iter < iterations; iter++) {
         const forces = pos.map(() => ({x:0,y:0,z:0}));
@@ -109,7 +109,7 @@ function springLayout3D(vertices, edges, iterations = 500) {
 // -----------------------------------------------------------
 function makeTextSprite(message, parameters = {}) {
     const fontSize = parameters.fontSize || 20;
-    const color = parameters.color || '#ffffff';
+    const color = parameters.color || '#000000';
 
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
@@ -146,12 +146,13 @@ function renderComplex3D(complex) {
         canvas,
         antialias: true
     });
+
     renderer.setPixelRatio(devicePixelRatio);
     renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
     window.THREE_RENDERER = renderer;
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x111111);
+    scene.background = new THREE.Color(0xffffff);
 
     const camera = new THREE.PerspectiveCamera(
         60,
@@ -179,7 +180,7 @@ function renderComplex3D(complex) {
     // -----------------------------------------------------------
     // Draw edges
     // -----------------------------------------------------------
-    const lineMat = new THREE.LineBasicMaterial({ color: 0x44aaff });
+    const lineMat = new THREE.LineBasicMaterial({ color: 0x888888 });
     for (const [a, b] of edges) {
         const geo = new THREE.BufferGeometry();
         const pts = new Float32Array([...coords[a], ...coords[b]]);
@@ -191,10 +192,10 @@ function renderComplex3D(complex) {
     // -----------------------------------------------------------
     // Draw 2-simplices
     // -----------------------------------------------------------
-    const faceMat = new THREE.MeshPhongMaterial({
-        color: 0x00ffff,
+    const faceMat = new THREE.MeshBasicMaterial({
+        color: 0xdddddd,
         transparent: true,
-        opacity: 0.25,
+        opacity: 0.33,
         side: THREE.DoubleSide
     });
 
@@ -217,7 +218,7 @@ function renderComplex3D(complex) {
     // -----------------------------------------------------------
     for (const v of canonicalVertices) {
         const sphereGeo = new THREE.SphereGeometry(0.05, 16, 16);
-        const mat = new THREE.MeshPhongMaterial({ color: 0xff4444 });
+        const mat = new THREE.MeshBasicMaterial({ color: 0x0000ff });
         const s = new THREE.Mesh(sphereGeo, mat);
         s.position.set(...coords[v]);
         scene.add(s);
@@ -227,7 +228,7 @@ function renderComplex3D(complex) {
             .map(([k]) => k)
             .join(",");
 
-        const labelSprite = makeTextSprite(original, { fontSize: 32, color: '#ffffff' });
+        const labelSprite = makeTextSprite(original);
         labelSprite.position.set(...coords[v]);
         labelSprite.position.y += 0.15; // sopra il vertice
         scene.add(labelSprite);
