@@ -7,7 +7,6 @@ from union_find import UnionFind
 
 
 type VertexName = str
-vertices_order: List[VertexName] = []
 
 type Simplex = FrozenSet[VertexName]
 
@@ -227,7 +226,10 @@ def eval_stmt(env: Environment, stmt: Statement) -> Environment:
     raise ValueError(f"Unknown statement: {stmt}")
 
 
+vertices_order: List[VertexName] = []
 def eval_program(statements: Program) -> Environment:
+    vertices_order.clear
+
     env = initial_environment()
     print(env)
     for stmt in statements:

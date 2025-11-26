@@ -57,7 +57,7 @@ class ComplexDeclExpr:
     name: str
     expr : Expr
 
-type Statement = ComplexDeclVtx | ComplexDeclExpr
+type Statement = ComplexDeclVtx | Expr
 type Program = List[Statement]
 
 
