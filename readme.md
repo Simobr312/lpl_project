@@ -131,27 +131,26 @@ The parser is implemented using lark parsing library.
 The grammar of the language is defined as follows:
 ```
 ?program: statement*
+statement: "complex" IDENT "=" expr | "complex" IDENT "=" vertices_list
 
-    statement: "complex" IDENT "=" expr | "complex" IDENT "=" vertices_list
+?expr: operation | IDENT | "(" expr ")"
 
-    ?expr: operation | IDENT | "(" expr ")"
+operation: OP "(" expr "," expr ")" ["mapping" mapping_block]
 
-    operation: OP "(" expr "," expr ")" ["mapping" mapping_block]
+vertices_list: "[" id_list "]"
+id_list: IDENT ("," IDENT)*
 
-    vertices_list: "[" id_list "]"
-    id_list: IDENT ("," IDENT)*
+mapping_block: "{" mapping_list "}"
+mapping_list: mapping_pair ("," mapping_pair)*
+mapping_pair: IDENT "->" IDENT
 
-    mapping_block: "{" mapping_list "}"
-    mapping_list: mapping_pair ("," mapping_pair)*
-    mapping_pair: IDENT "->" IDENT
+OP: /[a-zA-Z_][a-zA-Z0-9_]*/
+IDENT: /[A-Za-z_][A-Za-z0-9_]*/
 
-    OP: /[a-zA-Z_][a-zA-Z0-9_]*/
-    IDENT: /[A-Za-z_][A-Za-z0-9_]*/
-
-    COMMENT: "//" /[^\n]/* | "\#" /(.|\n)*?/
-    %ignore COMMENT
-    %import common.WS
-    %ignore WS      
+COMMENT: "//" /[^\n]/* | "\#" /(.|\n)*?/
+%ignore COMMENT
+%import common.WS
+%ignore WS      
 ````
 
 For more details, see `docs/semantic.md` and `docs/mathematics.md`.
