@@ -8,7 +8,7 @@ The language is designed to model simplicial complexes in a mathematically meani
 
 The current version focuses on the representation and construction of simplicial complexes.
 
-It also provides a web interface for visualizing the defined simplicial complexes in 3D.
+It also provides a web interface for visualizing the defined simplicial complexes in 3D. I am planning to deploy the interface as a website as soon as possible.
 
 In the future, I plan to implement operations to calculate topological properties of simplicial complexes, such as homology groups.
 
@@ -104,7 +104,7 @@ The files of the project will be organized as follows:
 ```
 - /src: Contains the source code of the language implementation.
     - /parser.py: Code for parsing the DSL syntax.
-    - /main.py: Main interpreter and semantic analysis.
+    - /interpreter.py: Main interpreter and semantic analysis.
     - /visualization : Code related to 3D visualization.
         -/frontend: Frontend code for visualization using Three.js.
         -server.py: Backend server to serve the visualization.
@@ -116,8 +116,12 @@ The files of the project will be organized as follows:
 ```
 
 The project will is using the following libraries:
+
 In Python
 - lark-parser: For parsing the DSL syntax.
+
+- uvicorn and fastapi: For serving the web interface.
+
 In JavaScript
 - Three.js: For 3d rendering of the simplicial complexes
 
@@ -151,3 +155,31 @@ The grammar of the language is defined as follows:
 ````
 
 For more details, see `docs/semantic.md` and `docs/mathematics.md`.
+
+## Installation instructions
+
+To set up the environment for running the language interpreter and use the web interface locally, follow these steps:
+1. **Install the required Python packages**:
+   Install the necessary Python packages using pip(possibly in a virtual environment):
+   ```
+   pip install -r requirements.txt
+   ```
+2. **Run the web server**:
+   Navigate to the `src/` directory and start the web server:
+    ```
+    cd src/
+    uvicorn server:app --reload
+    ```
+
+3. **Access the web interface**:
+   Open your web browser and go to `http://127.0.0.1:8000/index.html` to access the web interface for visualizing simplicial complexes.
+
+4. **Run examples**:
+   Copy the contents from /examples into the web interface code editor.
+
+## Web Interface
+The web interface lets you:
+- Write DSL code
+- Run them
+- Inspect the defined simplicial complexes
+- Render them in the 3D viewer

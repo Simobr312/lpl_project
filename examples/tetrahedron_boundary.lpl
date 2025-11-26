@@ -1,6 +1,3 @@
-// Tetrahedron vertices
-complex V0 = [A, B, C, D]
-
 // Boundary: union of all triangular faces
 complex F1 = [A, B, C]
 complex F2 = [A, B, D]

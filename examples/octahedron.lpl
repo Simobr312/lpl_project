@@ -1,11 +1,3 @@
-// Octahedron vertices
-complex N = [N]
-complex S = [S]
-complex E = [E]
-complex W = [W]
-complex F = [F]
-complex B = [B]
-
 // Faces of the octahedron (triangles)
 complex F1 = [N, E, F]
 complex F2 = [N, F, W]

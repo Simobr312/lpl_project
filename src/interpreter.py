@@ -98,6 +98,7 @@ def build_complex_from_vtx(stmt: ComplexDeclVtx) -> Complex:
     return Complex({complex}, uf)
 
 # == OPERATIONS == #
+
 def union(K1: Complex, K2: Complex) -> Complex:
     """Returns the union of two simplicial complex"""
     common_vertices = set(K1.vertices) & set(K2.vertices)
@@ -246,8 +247,7 @@ def main():
 
     // Union all faces to form the boundary
     complex TetBoundary = union(union(F1, F2), union(F3, F4))
-
-"""
+    """
 
     ast = parse_ast(source_code)
     env = eval_program(ast)

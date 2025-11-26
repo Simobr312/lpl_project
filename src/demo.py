@@ -1,4 +1,4 @@
-from main import *
+from interpreter import *
 
 def demo():
     src = '''
@@ -22,7 +22,7 @@ def demo():
     u = lookup(env, 'U')
     assert u.dimension == 2
     g = lookup(env, 'G')
-    # after gluing B->E and C->F the glued complex still has a 2-simplex
+    
     assert any(len(s) == 3 for s in g.maximal_simplices)
 
     # Tests for semantic checks

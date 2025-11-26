@@ -4,7 +4,7 @@ from pydantic import BaseModel
 from fastapi.staticfiles import StaticFiles
 
 from parser import parse_ast
-from main import eval_program, lookup
+from interpreter import eval_program, lookup
 
 app = FastAPI()
 
