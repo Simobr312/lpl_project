@@ -56,7 +56,7 @@ complex S1 = [A, B, C]
 ```
 is that S1 is a complex which contains the simplices {A, B, C}, {A, B}, {A, C}, {B, C}, {A}, {B}, {C}.
 
-1. **Union of Simplicial Complexes**: 
+2. **Union of Simplicial Complexes**: 
 Create a new simplicial complex that is the set-theoretic union of two simplicial complexes.
 For example:
 ```   
@@ -64,7 +64,7 @@ complex K3 = union(K1, K2)
 ```
 
 
-2. **Glue Simplicial Complexes**: 
+3. **Glue Simplicial Complexes**: 
 Create a new simplicial complex by gluing two simplicial complexes along specified vertices.
 
 For example:
