@@ -2,11 +2,10 @@ from __future__ import annotations
 from itertools import combinations
 from typing import List, Dict, Set, FrozenSet, Callable
 
-from parser import Expr, OpExpr, Ref, Program, ComplexDeclVtx, ComplexDeclExpr, Statement, parse_ast
+from parser import Expr, OpExpr, Ref, Program, ComplexStmt, ComplexLiteral, Statement, parse_ast
 from union_find import UnionFind
 
-
-type VertexName = str
+type VertexName = Ref
 
 type Simplex = FrozenSet[VertexName]
 
@@ -59,6 +58,7 @@ def initial_environment() -> Environment:
 
     env = bind(env, "union", union)
     env = bind(env, "glue", glue)
+    env = bind(env, "join", join)
 
     return env
 
@@ -188,14 +188,39 @@ def glue(K1: Complex, K2: Complex, mapping: Dict[VertexName, VertexName]) -> Com
 
     return Complex(maximal_simplices=new_simplices, uf=new_uf)
 
+def join(K1: Complex, K2: Complex) -> Complex:
+    new_uf = K1.uf.merge(K2.uf)
+
+    new_simplices: Set[Simplex] = set()
+    for s in K1.maximal_simplices:
+        for t in K2.maximal_simplices:
+            canon = frozenset(new_uf.find(v) for v in s | t)
+            if len(canon) != len(s | t):
+                raise ValueError(
+                    f"Join created degenerate simplex: {s | t} collapsed to {canon}"
+                )
+            new_simplices.add(canon)
+
+    return Complex(maximal_simplices=new_simplices, uf=new_uf)
+
+
 # == EVALUATION == #
 
 def eval_expr(env: Environment, expr: Expr) -> Complex:
-    if isinstance(expr, Ref):
-        val = lookup(env, expr.name)
+    if isinstance(expr, str):
+        val = lookup(env, expr)
         if isinstance(val, Complex):
             return val
-        raise ValueError(f"Identifier '{expr.name}' is not a complex")
+        raise ValueError(f"Identifier '{expr}' is not a complex")
+    
+    if isinstance(expr, ComplexLiteral):
+        complex = frozenset(expr.vertices)
+        uf = UnionFind[VertexName]()
+        for v in expr.vertices:
+            uf.add(v)
+
+        return Complex({complex}, uf)
+
 
     if isinstance(expr, OpExpr):
         op_fun = lookup(env, expr.op)
@@ -215,20 +240,17 @@ def eval_expr(env: Environment, expr: Expr) -> Complex:
     raise TypeError("Unknown expr")
 
 def eval_stmt(env: Environment, stmt: Statement) -> Environment:
-    if isinstance(stmt, ComplexDeclVtx):
-        C = build_complex_from_vtx(stmt)
-        return bind(env, stmt.name, C)
-
-    if isinstance(stmt, ComplexDeclExpr):
-        C = eval_expr(env, stmt.expr)
-        return bind(env, stmt.name, C)
-
-    raise ValueError(f"Unknown statement: {stmt}")
+    match stmt:
+        case ComplexStmt(name=name, expr=expr):
+            complex = eval_expr(env, expr)
+            return bind(env, name, complex)
+        case _:
+            raise ValueError(f"Unknown statement: {stmt}")
 
 
 vertices_order: List[VertexName] = []
 def eval_program(statements: Program) -> Environment:
-    vertices_order.clear
+    vertices_order.clear()
 
     env = initial_environment()
     print(env)
@@ -238,17 +260,10 @@ def eval_program(statements: Program) -> Environment:
 
 def main():
     source_code = """
-    // Tetrahedron vertices
-    complex V0 = [A, B, C, D]
+        // S0
+        // Define a triangle
+        complex A = [v1, v2, v3]
 
-    // Boundary: union of all triangular faces
-    complex F1 = [A, B, C]
-    complex F2 = [A, B, D]
-    complex F3 = [A, C, D]
-    complex F4 = [B, C, D]
-
-    // Union all faces to form the boundary
-    complex TetBoundary = union(union(F1, F2), union(F3, F4))
     """
 
     ast = parse_ast(source_code)

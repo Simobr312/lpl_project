@@ -2,15 +2,15 @@ from lark import Lark, Token, Tree
 from dataclasses import dataclass
 from typing import Dict, List, FrozenSet
 
-defined_operations = {"union", "glue"}
+defined_operations = {"union", "glue", "join"}
 
 # Parser grammar
 grammar = r"""
-    ?program: statement*
+    program: statement*
 
-    statement: "complex" IDENT "=" expr | "complex" IDENT "=" vertices_list
+    statement: "complex" IDENT "=" expr -> statement
 
-    ?expr: operation | IDENT | "(" expr ")"
+    ?expr: operation | IDENT | vertices_list | "(" expr ")"
 
     operation: OP "(" expr "," expr ")" ["mapping" mapping_block]
 
@@ -33,9 +33,14 @@ grammar = r"""
 
 parser = Lark(grammar, start="program")
 
+type Ref = str
+
+
 @dataclass
-class Ref:
-    name: str
+class ComplexLiteral:
+    vertices: List[Ref]
+
+type Expr = Ref | OpExpr
 
 @dataclass
 class OpExpr:
@@ -44,59 +49,24 @@ class OpExpr:
     right: "Expr"
     mapping: dict[str, str] | None
 
-type Expr = Ref | OpExpr
 
-@dataclass
-class ComplexDeclVtx:
-    name: str
-    vertices: List[Ref]
-
-
-@dataclass
-class ComplexDeclExpr:
-    name: str
-    expr : Expr
-
-type Statement = ComplexDeclVtx | Expr
+type Statement = ComplexStmt
 type Program = List[Statement]
 
+@dataclass
+class ComplexStmt:
+    name: str
+    expr: Expr
 
-def transform_parse_tree(tree: Tree) -> Program | Expr:
+        
+def transform_expr_tree(tree: Tree) -> Expr:
     match tree:
-        case Tree(
-            data = "program", 
-            children = statements
-        ):
-            program: Program = []
-            for stmt in statements:
-                program.extend(transform_parse_tree(stmt))
-            return program
+        case Tree(data="paren", children=[sub]):
+            return transform_expr_tree(sub)
         
-        case Tree(
-            data = "statement", 
-            children = [Token("IDENT", name), expr]):
-
-            if expr.data == "vertices_list":
-                vtx_decls = transform_parse_tree(expr)
-                for decl in vtx_decls:
-                    decl.name = name
-                return vtx_decls
-            else:
-                expr_ast = transform_parse_tree(expr)
-                return [ComplexDeclExpr(name=name, expr=expr_ast)]
-        
-        case Tree(
-            data = "vertices_list", 
-            children = [id_list]
-            ):
-            vertices = [token.value for token in id_list.children]
-            return [ComplexDeclVtx(name="", vertices=vertices)]
-        
-        case Tree(
-            data = "expr", 
-            children = [operation]
-            ):
-            return transform_parse_tree(operation)
+        case Tree(data="vertices_list", children=[id_list]):
+            vertices = [tok.value for tok in id_list.children]
+            return ComplexLiteral(vertices=vertices)
         
         case Tree("operation", 
                   children = [op, left, right, mapping_block]):
@@ -110,24 +80,44 @@ def transform_parse_tree(tree: Tree) -> Program | Expr:
                     for p in mapping_block.children[0].children
                 }
 
-            return OpExpr(op, transform_parse_tree(left), transform_parse_tree(right), mapping_dict)
+            return OpExpr(op, transform_expr_tree(left), transform_expr_tree(right), mapping_dict)
         
-        case Token("IDENT", name):
-            return Ref(name)
+        case Token(type="IDENT", value=name):
+            return name
+        case x:
+            raise ValueError(f"Unexpected parse tree for expression: {tree}")
         
-        case Token("expr", expr):
-            return transform_parse_tree(expr)
-        
-        case Tree("paren", [sub]):
-            return transform_parse_tree(sub)
+def transform_command_tree(tree: Tree) -> Statement:
+    match tree:
+        case Tree(data="statement", children = [
+            Token(type="IDENT", value = name),
+            expr_tree
+        ]):
+            return ComplexStmt(
+                name=name,
+                expr = transform_expr_tree(expr_tree)
+            )
             
         case _:
-            raise ValueError(f"Unexpected parse tree node: {tree.pretty()}")
+            raise ValueError(f"Unexpected parse tree for statement: {tree}")
+
+def transform_program_tree(tree: Tree) -> Program:
+    program: Program = []
+    match tree:
+        case Tree(data="program", children=statements):
+            for stmt_tree in statements:
+                stmt = transform_command_tree(stmt_tree)
+                program.append(stmt)
+            return program
+        case _:
+            raise ValueError(f"Unexpected parse tree for program: {tree}")
 
 
 def parse_ast(source_code: str) -> Program:
 
     parse_tree = parser.parse(source_code)
-    ast = transform_parse_tree(parse_tree)
+    ast = transform_program_tree(parse_tree)
+
+    print("AST:", ast)
 
     return ast

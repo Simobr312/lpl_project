@@ -214,6 +214,34 @@ function renderComplex3D(complex) {
     }
 
     // -----------------------------------------------------------
+    // Draw 3-simplices
+    // -----------------------------------------------------------
+    const solidMat = new THREE.MeshBasicMaterial({
+        color: 0xcccccc,
+        transparent: true,
+        opacity: 0.9,
+        side: THREE.DoubleSide
+    });
+    
+    for (const simplex of complex.simplices) {
+        const canon = simplex.map(v => canonical[v]);
+        if (canon.length < 4) continue;
+        const pts = canon.map(v => new THREE.Vector3(...coords[v]));
+        if (pts.length === 4) {
+            const geo = new THREE.BufferGeometry().setFromPoints(pts);
+            geo.setIndex([
+                0,1,2,
+                0,1,3,
+                0,2,3,
+                1,2,3
+            ]);
+            geo.computeVertexNormals();
+            const mesh = new THREE.Mesh(geo, solidMat);
+            scene.add(mesh);
+        }
+    }
+
+    // -----------------------------------------------------------
     // Draw vertices + labels inside canvas
     // -----------------------------------------------------------
     for (const v of canonicalVertices) {
