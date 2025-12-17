@@ -6,6 +6,7 @@ from parser import Expr, OpExpr, Ref, Program, ComplexStmt, ComplexLiteral, Stat
 from union_find import UnionFind
 
 type VertexName = Ref
+vertices_order: List[VertexName] = []
 
 type Simplex = FrozenSet[VertexName]
 
@@ -31,7 +32,8 @@ class Complex:
         self.maximal_simplices = maximal_simplices
         self.uf = uf or UnionFind[VertexName]()
 
-    def get_classes(self) -> Dict[VertexName, Set[VertexName]]:
+    @property
+    def classes(self) -> Dict[VertexName, Set[VertexName]]:
         return self.uf.get_classes()
     
     def __repr__(self) -> str:
@@ -39,10 +41,26 @@ class Complex:
         f"Complex(\n"
         f"  dimension={self.dimension},\n"
         f"  maximal_simplices={self.maximal_simplices},\n"
-        f"  classes={{ {self.get_classes()} }}\n"
+        f"  classes={{ {self.classes} }}\n"
         f")"
         )
-
+    
+    @property
+    def simplices(self) -> Set[Simplex]:
+        """Returns all faces of the complex."""
+        simplices : Set[Simplex] = set()
+        for simplex in self.maximal_simplices:
+            n = len(simplex)
+            for k in range(1, n + 1):
+                for face in combinations(simplex, k):
+                    simplices.add(frozenset(face))
+        return simplices
+    
+    @property
+    def vertex_order(self) -> Dict[str, int]:
+        """Returns the list of vertices in a consistent order."""
+        return {v: i for i, v in enumerate(self.vertices)}
+    
 # == ENVIRONMENT == #
 
 type DenOperator = Callable[..., Complex]
@@ -72,32 +90,8 @@ def bind(env: Environment, x: str, value: DVal) -> Environment:
     new_env[x] = value
     return new_env
 
-def faces(simplex: Simplex):
-    """Generate all faces of a simplex."""
-    s = list(simplex)
-    for k in range(len(s) + 1):
-        for combo in combinations(s, k):
-                yield frozenset(combo)
-
-# == BUILDING == #
-
-def build_complex_from_vtx(stmt: ComplexDeclVtx) -> Complex:
-    """Builds a simplicial complex from a vertex declaration."""
-    l = len(vertices_order)
-    vertices_order.extend(stmt.vertices)
-    if(len(vertices_order) != l + len(stmt.vertices)):
-        raise ValueError(f"Duplicate vertex names in complex declaration: {stmt.vertices}")
-
-
-    complex = frozenset(stmt.vertices)
-    uf = UnionFind[VertexName]()
-    for v in stmt.vertices:
-        uf.add(v)
-
-    return Complex({complex}, uf)
 
 # == OPERATIONS == #
-
 def union(K1: Complex, K2: Complex) -> Complex:
     """Returns the union of two simplicial complex"""
     common_vertices = set(K1.vertices) & set(K2.vertices)
@@ -203,9 +197,13 @@ def join(K1: Complex, K2: Complex) -> Complex:
 
     return Complex(maximal_simplices=new_simplices, uf=new_uf)
 
+def update_vertices_order(complex: Complex) -> None:
+    for v in complex.vertices:
+        if v not in vertices_order:
+            vertices_order.append(v)
+
 
 # == EVALUATION == #
-
 def eval_expr(env: Environment, expr: Expr) -> Complex:
     if isinstance(expr, str):
         val = lookup(env, expr)
@@ -218,6 +216,8 @@ def eval_expr(env: Environment, expr: Expr) -> Complex:
         uf = UnionFind[VertexName]()
         for v in expr.vertices:
             uf.add(v)
+
+        update_vertices_order(Complex({complex}, uf))
 
         return Complex({complex}, uf)
 
@@ -257,25 +257,3 @@ def eval_program(statements: Program) -> Environment:
     for stmt in statements:
         env = eval_stmt(env, stmt)
     return env
-
-def main():
-    source_code = """
-        // S0
-        // Define a triangle
-        complex A = [v1, v2, v3]
-
-    """
-
-    ast = parse_ast(source_code)
-    env = eval_program(ast)
-
-
-    for name in env.keys():
-        if callable(env[name]):
-            continue
-
-        complex_ = lookup(env, name)
-        print(f"{name}: {complex_}")
-
-if __name__ == "__main__":
-    main()

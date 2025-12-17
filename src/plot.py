@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from scipy.optimize import minimize
 
-from interpreter import Complex, lookup, eval_program
+from core import Complex, lookup, eval_program
 
 # --------------------------
 # Step 1: Canonical vertices

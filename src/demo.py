@@ -1,4 +1,4 @@
-from interpreter import *
+from core import *
 
 def demo():
     src = '''

@@ -35,7 +35,6 @@ parser = Lark(grammar, start="program")
 
 type Ref = str
 
-
 @dataclass
 class ComplexLiteral:
     vertices: List[Ref]
