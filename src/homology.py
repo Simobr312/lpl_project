@@ -116,7 +116,7 @@ def compute_homology(complex: Complex):
 def main():
     source_code = """
         complex S1 = union([v0, v1], union([v1, v2], [v2, v0]))
-complex K  = join(S1, [n])
+    complex K  = join(S1, [n])
     """
 
     ast = parse_ast(source_code)

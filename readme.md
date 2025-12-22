@@ -3,21 +3,33 @@
 ### Simone Riccio
 
 # Overview
-This repository provides a domain-specific language (DSL) for representing and manipulating simplicial complexes.
-The language is designed to model simplicial complexes in a mathematically meaningful way, allowing users to define simplices, construct complexes, perform union and gluing operations, and reason about their structure.
+This project defines a domain-specific programming language for simplicial complexes, designed to combine:
 
-The current version focuses on the representation and construction of simplicial complexes.
+- formal mathematical correctness,
+- high-level topological abstractions,
+- imperative control flow,
+- and interactive geometric visualization.
 
-It also provides a web interface for visualizing the defined simplicial complexes in 3D. I am planning to deploy the interface as a website as soon as possible.
+The language allows users to **construct, combine, inspect, and reason** about **simplicial complexes** using a syntax and semantic model inspired by both algebraic topology and classical programming languages.
 
-In the future, I plan to implement operations to calculate topological properties of simplicial complexes, such as homology groups.
+A web-based 3D visualization interface is provided to render simplicial complexes defined in the language.
 
+## Deisgn Philosophy
+The language is built around three guiding principles:
+
+- **Mathematical Faithfulness**
+All constructs correspond directly to standard notions in algebraic topology.
+
+- **Explicit State, Minimal Types**
+Simplicial complexes are stored in memory and manipulated via references.
+All observable values are integers.
+
+- **Separation of Construction and Observation**
+Complexes are constructed and stored; numerical invariants are observed.
 
 ## Language Architecture
 
 ### Mathematical Foundations
-
-This DSL implements the core mathematical notions of simplicial complexes and enforces their structural rules through semantic checks.
 
 A simplicial complex is defined over a totally ordered set of vertices $V$.
 
@@ -38,12 +50,27 @@ Semantic checks ensure that:
 - No simplex contains duplicate vertices.
 - Gluing operations are valid, meaning the complexes share the specified simplices.
 
-### Operations
 
-The midterm version of the project implements the following core operations.
+### Core Semantic Model
+The language follows a **store-based denotational semantics**.
 
-1. **Define Simplex**: Create a complex by specifying its vertices.
-For example:
+- **Semantic Domains**
+
+- **Environment** Maps identifiers to denotable values.
+
+- **Store** Maps memory locations to storable values.
+
+Values in the language are either:
+ - **Denotable Values**: Integer or memory locations.
+ - **Storable Values**: Simplicial complexes.
+
+Operations are divided into:
+1. **Constructive Operations**: Create new simplicial complexes from existing ones.
+2. **Observational Operations**: Calculate properties of simplicial complexes.
+
+### Constructive Operations
+
+1. **Define Simplex**:
 ```
 complex S1 = [A, B, C]
 complex S2 = [D, E]
@@ -79,21 +106,54 @@ It is possible to nest operations, for example:
 ```
 complex K4 = union(K1, glue(K2, K3) mapping {C2 -> D3})
 ```
-### Geometry and Visualization
+
+There are other operations which are discussed in the documentation.
+
+## Observational Operations
+
+1. **Calculate Dimension**:
+Calculate the dimension of a simplicial complex.
+   ```
+   dim(K1)
+   ```
+   return di dimension of the complex $K$.
+2. **Calculate Betti Numbers**:
+Calculate the Betti numbers of a simplicial complex.
+   ```
+   betti(K1, [n])
+   ```
+   returns the n-th Betti number of the complex $K$.
+
+## Control Flow Structures
+
+All conditions are integer-valued: zero = false, non-zero = true.
+
+1. **Conditional Statements**:
+```
+if condition then
+   statement1
+else
+   statement2
+endif
+```
+
+The `condition` could be any expression that evaluates to an integer, for example an observation operation like `dim(K)`.
+
+2. **Loops**:
+```
+while condition do
+   statement
+endwhile
+```
+
+## Geometry and Visualization
 
 Due to embedding constraints, the visualization may not always be topologically faithful.
 The current version includes an online editor for the language which also provides a 3D visualization of the simplicial complexes defined in the code.
 
-In order to determinate vertex coordinates, a friend of mine suggested me to treat it as a problem of spring constraints, so I implemented a simple physics engine that simulates springs between connected vertices to find a visually appealing layout in JavaScript for the 3D visualization.
+In order to determine vertex coordinates, a friend of mine suggested me to treat it as a problem of spring constraints, so I implemented a simple physics engine that simulates springs between connected vertices to find a visually appealing layout in JavaScript for the 3D visualization.
 
 The main tool for the rendering is Three.js.
-
-### Future Work
-In the future, I plan to implement the following operations to calculate topological properties of simplicial complexes:
-1. **More operations to have simplicial complexes**: Implement more operations to create simplicial complexes, such as taking the join or product of two simplicial complexes or the one point suspension.
-2. **Calculate baricentric subdivision**: Implement an operation to compute the barycentric subdivision of a simplicial complex, which is classically useful for some proofs, but here I think will just be a funny operation to have.
-3. **Implementing Chain Complexes and Boundary Operators**: Represent chain complexes and boundary operators to facilitate homology calculations. And these will add more elements to the semantic domain of the language.
-4. **Calculate (Simplicial) Homology Groups**: Compute the homology groups of a simplicial complex, providing insights into its topological structure, such as connected components, holes, and voids.
 
 # Implementation Details
 
@@ -115,7 +175,7 @@ The files of the project will be organized as follows:
     - /semantics.md: Denotational semantics of the language.
 ```
 
-The project will is using the following libraries:
+The project uses the following libraries:
 
 In Python
 - lark-parser: For parsing the DSL syntax.
@@ -131,9 +191,11 @@ The parser is implemented using lark parsing library.
 The grammar of the language is defined as follows:
 ```
 ?program: statement*
-statement: "complex" IDENT "=" expr | "complex" IDENT "=" vertices_list
+program: statement*
 
-?expr: operation | IDENT | "(" expr ")"
+statement: "complex" IDENT "=" expr -> statement
+
+?expr: operation | IDENT | vertices_list | "(" expr ")"
 
 operation: OP "(" expr "," expr ")" ["mapping" mapping_block]
 
@@ -150,7 +212,7 @@ IDENT: /[A-Za-z_][A-Za-z0-9_]*/
 COMMENT: "//" /[^\n]/* | "\#" /(.|\n)*?/
 %ignore COMMENT
 %import common.WS
-%ignore WS      
+%ignore WS
 ````
 
 For more details, see `docs/semantic.md` and `docs/mathematics.md`.
@@ -167,7 +229,7 @@ To set up the environment for running the language interpreter and use the web i
    Navigate to the `src/` directory and start the web server:
     ```
     cd src/
-    uvicorn server:app --reload
+    uvicorn server:app --reloadx
     ```
 
 3. **Access the web interface**:
