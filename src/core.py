@@ -1,259 +1,392 @@
 from __future__ import annotations
-from itertools import combinations
-from typing import List, Dict, Set, FrozenSet, Callable
+from typing import Any, List, Dict,  Callable, Tuple, Type
+from dataclasses import dataclass
 
-from parser import Expr, OpExpr, Ref, Program, ComplexStmt, ComplexLiteral, Statement, parse_ast
+from abc import ABC, abstractmethod
+
+from parser import VertexDecl, parse_ast, Command, Expr, Program, IntLiteral
+from complex import Complex, VertexName, pick_vertex
 from union_find import UnionFind
 
-type VertexName = Ref
-vertices_order: List[VertexName] = []
+@dataclass
+class Loc:
+    addr: int
 
-type Simplex = FrozenSet[VertexName]
+type EVal = Complex | int
+type MVal = Complex
+type DVal = EVal | Loc | Operator | int | VertexName
 
-class Complex:
-    """A simplicial complex represented by its maximal simplices and a union-find structure for vertex identifications."""
-    maximal_simplices : Set[Simplex]
-    uf: UnionFind[VertexName]
-
-    @property
-    def dimension(self) -> int:
-        if not self.maximal_simplices:
-            return -1
-        return max(len(face) - 1 for face in self.maximal_simplices)
-
-    @property
-    def vertices(self) -> Set[VertexName]:
-        verts: Set[VertexName] = set()
-        for face in self.maximal_simplices:
-            verts.update(face)
-        return verts
-    
-    def __init__(self, maximal_simplices: Set[Simplex], uf: UnionFind[VertexName]) -> None:
-        self.maximal_simplices = maximal_simplices
-        self.uf = uf or UnionFind[VertexName]()
-
-    @property
-    def classes(self) -> Dict[VertexName, Set[VertexName]]:
-        return self.uf.get_classes()
-    
-    def __repr__(self) -> str:
-        return (
-        f"Complex(\n"
-        f"  dimension={self.dimension},\n"
-        f"  maximal_simplices={self.maximal_simplices},\n"
-        f"  classes={{ {self.classes} }}\n"
-        f")"
-        )
-    
-    @property
-    def simplices(self) -> Set[Simplex]:
-        """Returns all faces of the complex."""
-        simplices : Set[Simplex] = set()
-        for simplex in self.maximal_simplices:
-            n = len(simplex)
-            for k in range(1, n + 1):
-                for face in combinations(simplex, k):
-                    simplices.add(frozenset(face))
-        return simplices
-    
-    @property
-    def vertex_order(self) -> Dict[str, int]:
-        """Returns the list of vertices in a consistent order."""
-        return {v: i for i, v in enumerate(self.vertices)}
-    
-# == ENVIRONMENT == #
-
-type DenOperator = Callable[..., Complex]
-type DVal = Complex | DenOperator
-#I changed the typing here from Callable to Dict in order to see the domain of the environment in the web server
 type Environment = Dict[str, DVal]
 
+# == State Management == #
+
+@dataclass
+class State:
+    store: Dict[int, MVal]
+    next_loc: int
+    vertices_order: Dict[VertexName, int]
+    new_vertex_id: int 
+
+def empty_store() -> Dict[int, MVal]:
+    return {}
+
+def empty_state() -> State:
+    return State(
+        store=empty_store(), 
+        next_loc=0, 
+        vertices_order={},
+        new_vertex_id=0
+        )
+
+def allocate(state: State, value: MVal) -> tuple[Loc, State]:
+    loc = Loc(state.next_loc)
+    prev_store = state.store.copy()
+    prev_store[loc.addr] = value
+    return loc, State(store=prev_store, next_loc=state.next_loc + 1, vertices_order=state.vertices_order, new_vertex_id=state.new_vertex_id)
+
+def update(state: State, addr: int, value: MVal) -> State:
+    prev_store = state.store.copy()
+    prev_store[addr] = value
+    return State(store=prev_store, next_loc=state.next_loc, vertices_order=state.vertices_order, new_vertex_id=state.new_vertex_id)
+
+def access(state: State, loc: Loc) -> MVal:
+    if loc.addr in state.store:
+        return state.store[loc.addr]
+    raise KeyError(f"Address '{loc.addr}' not found in store")
+
+def ensure_vertices_order(state: State, vertices: set[VertexName]) -> State:
+    vo = state.vertices_order.copy()
+    next_index = len(vo)
+
+    for v in vertices:
+        if v not in vo:
+            vo[v] = next_index
+            next_index += 1
+
+    return State(
+        store=state.store,
+        next_loc=state.next_loc,
+        vertices_order=vo,
+        new_vertex_id=state.new_vertex_id
+    )
+
+def fresh_vertex(state: State) -> tuple[VertexName, State]:
+    v : VertexName = f"__v{state.new_vertex_id}"
+
+    new_vertices_order = state.vertices_order.copy()
+    new_vertices_order[v] = len(new_vertices_order)   # 
+
+    return v, State(
+        store=state.store,
+        next_loc=state.next_loc,
+        vertices_order=new_vertices_order,
+        new_vertex_id=state.new_vertex_id + 1
+    )
+
+# == Environment Management == #
+
 def empty_environment() -> Environment:
-    return dict()
+    return {}
 
-def initial_environment() -> Environment:
-    env = empty_environment()
-
-    env = bind(env, "union", union)
-    env = bind(env, "glue", glue)
-    env = bind(env, "join", join)
-
-    return env
-
-def lookup(env: Environment, name: str) -> DVal:
-    if name not in env:
-        raise ValueError(f"Undefined symbol: {name}")
-    return env[name]
-
-def bind(env: Environment, x: str, value: DVal) -> Environment:
+def bind(env: Environment, name: str, value: DVal) -> Environment:
     new_env = env.copy()
-    new_env[x] = value
+    new_env[name] = value
     return new_env
 
+def lookup(env: Environment, name: str) -> DVal:
+    if name in env:
+        return env[name]
+    raise KeyError(f"Identifier '{name}' not found in environment")
 
-# == OPERATIONS == #
-def union(K1: Complex, K2: Complex) -> Complex:
-    """Returns the union of two simplicial complex"""
-    common_vertices = set(K1.vertices) & set(K2.vertices)
+@dataclass(frozen=True)
+class Operator(ABC):
+    name: str
+    fn: Callable
+    arg_types: Tuple[Type, ...]
+    ret_type: Type
 
-    for v in common_vertices:
-        for w in common_vertices:
-            k1_eq = (K1.uf.find(v) == K1.uf.find(w))
-            k2_eq = (K2.uf.find(v) == K2.uf.find(w))
+    @abstractmethod
+    def apply(self, args: list[Any], *, mapping=None, state: State) -> Any:
+        pass
 
-            if k1_eq != k2_eq:
-                raise ValueError(
-                    f"Incompatible vertex identifications in union(): "
-                    f"{v} and {w} are equivalent in one complex but not the other."
-                )
-            
-    new_uf = K1.uf.merge(K2.uf)
+class ConstructiveOperator(Operator):
+    def apply(self, args: List[Any], *, mapping = None, state: State = empty_state()) -> Complex:
 
-    new_simplices = set()
+        if self.name == "pick_vert":
+            if len(args) != 1:
+                raise ValueError("pick_vert expects exactly one complex argument")
+            return self.fn(args[0], state)
 
-    for σ in K1.maximal_simplices | K2.maximal_simplices:
+        if self.name == "glue":
+            if mapping is None:
+                raise ValueError("glue requires a mapping")
+            if len(args) != 2:
+                raise ValueError("glue expects exactly two complexes")
+            return self.fn(args[0], args[1], mapping)
 
-        canon = frozenset(new_uf.find(v) for v in σ)
-
-        if len(canon) != len(σ):
+        if mapping is not None:
             raise ValueError(
-                f"Union created a degenerate simplex: {σ} collapsed to {canon} "
-                f"because some vertices became identified."
+                f"{self.name} does not accept a mapping"
             )
 
-        new_simplices.add(canon)
+        if len(args) == 1:
+            return self.fn(args[0])
+        
+        
 
-    return Complex(maximal_simplices=new_simplices, uf=new_uf)
+        # Variadic fold
+        result = args[0]
+        for k in args[1:]:
+            result = self.fn(result, k)
+        return result
 
-def glue(K1: Complex, K2: Complex, mapping: Dict[VertexName, VertexName]) -> Complex:
-    """Returns the glueing of two simplicial complexes along a vertex mapping, with full semantic checks."""
-
-    V1 = K1.vertices
-    V2 = K2.vertices
-
-    for a, b in mapping.items():
-        if a not in V1:
-            raise ValueError(f"glue(): vertex '{a}' is not in the first complex.")
-        if b not in V2:
-            raise ValueError(f"glue(): vertex '{b}' is not in the second complex.")
-
-    inv = {}
-    for a, b in mapping.items():
-        if a in inv and inv[a] != b:
+class ObservationalOperator(Operator):
+    def apply(self, args: list[Any], *, mapping=None , state: State = empty_state()) -> EVal:
+        if mapping is not None:
             raise ValueError(
-                f"glue(): vertex '{a}' is mapped to two different targets: "
-                f"{inv[a]} and {b}."
-            )
-        inv[a] = b
-
-    items = list(mapping.items())
-    for i in range(len(items)):
-        a1, b1 = items[i]
-        for j in range(i + 1, len(items)):
-            a2, b2 = items[j]
-            eq1 = K1.uf.find(a1) == K1.uf.find(a2)
-            eq2 = K2.uf.find(b1) == K2.uf.find(b2)
-
-            if eq1 != eq2:
-                raise ValueError(
-                    f"glue(): incompatible identifications: "
-                    f"{a1}~{a2} in K1 but {b1}~{b2} is "
-                    f"{'not ' if not eq2 else ''}true in K2."
-                )
-
-    new_uf = K1.uf.merge(K2.uf)
-
-    for a, b in mapping.items():
-        new_uf.union(a, b)
-
-    new_simplices = set()
-
-    for s in K1.maximal_simplices | K2.maximal_simplices:
-
-        canon = frozenset(new_uf.find(v) for v in s)
-
-        if len(canon) != len(s):
-            raise ValueError(
-                f"glue(): the simplex {s} collapsed to {canon} "
-                f"after vertex identifications."
+                f"{self.name} does not accept a mapping"
             )
 
-        new_simplices.add(canon)
+        if len(args) != 1 or not isinstance(args[0], Complex):
+            raise TypeError(
+                f"{self.name} expects exactly one Complex argument"
+            )
 
-    return Complex(maximal_simplices=new_simplices, uf=new_uf)
+        return self.fn(args[0])
 
-def join(K1: Complex, K2: Complex) -> Complex:
-    new_uf = K1.uf.merge(K2.uf)
+class ArithmeticOperator(Operator):
+    def apply(self, args: list[Any], *, mapping=None, state: State = empty_state()):
+        if mapping is not None:
+            raise ValueError(
+                f"{self.name} does not accept a mapping"
+            )
 
-    new_simplices: Set[Simplex] = set()
-    for s in K1.maximal_simplices:
-        for t in K2.maximal_simplices:
-            canon = frozenset(new_uf.find(v) for v in s | t)
-            if len(canon) != len(s | t):
-                raise ValueError(
-                    f"Join created degenerate simplex: {s | t} collapsed to {canon}"
+        if len(args) != len(self.arg_types):
+            raise ValueError(
+                f"{self.name} expects {len(self.arg_types)} arguments"
+            )
+
+        for v in args:
+            if not isinstance(v, int):
+                raise TypeError(
+                    f"{self.name} expects integer arguments"
                 )
-            new_simplices.add(canon)
 
-    return Complex(maximal_simplices=new_simplices, uf=new_uf)
+        return self.fn(*args)
 
-def update_vertices_order(complex: Complex) -> None:
-    for v in complex.vertices:
-        if v not in vertices_order:
-            vertices_order.append(v)
+from complex import union, glue, join, dimension, num_vertices
+from arithmetic import lnot, lor, land, add, sub, mul
 
+# == Enviroment and State == #
+def initial_env_state() -> tuple[Environment, State]:
+    env = empty_environment()
+
+    # Constructive
+    env = bind(env, "union",
+        ConstructiveOperator("union", union, (Complex, Complex), Complex)
+    )
+    env = bind(env, "join",
+        ConstructiveOperator("join", join, (Complex, Complex), Complex)
+    )
+    env = bind(env, "glue",
+        ConstructiveOperator("glue", glue, (Complex, Complex), Complex)
+    )
+
+    env = bind(env, "pick_vert",
+        ConstructiveOperator("pick_vert", pick_vertex, (Complex, int), Complex)
+    )
+
+    # Observational
+    env = bind(env, "dim",
+        ObservationalOperator("dim", dimension, (Complex,), int)
+    )
+    env = bind(env, "num_vert",
+        ObservationalOperator("num_vert", num_vertices, (Complex,), int)
+    )
+
+    # Arithmetic
+    env = bind(env, "add",
+        ArithmeticOperator("add", add, (int, int), int)
+    )
+    env = bind(env, "sub",
+        ArithmeticOperator("sub", sub, (int, int), int)
+    )
+    env = bind(env, "mul",
+        ArithmeticOperator("mul", mul, (int, int), int)
+    )
+    env = bind(env, "and",
+        ArithmeticOperator("and", land, (int, int), int)
+    )
+    env = bind(env, "or",
+        ArithmeticOperator("or", lor, (int, int), int)
+    )
+    env = bind(env, "not",
+        ArithmeticOperator("not", lnot, (int,), int)
+    )
+
+    state = empty_state()
+    return env, state
 
 # == EVALUATION == #
-def eval_expr(env: Environment, expr: Expr) -> Complex:
+from parser import ComplexLiteral, OpCall, FunCall
+
+def evaluate_expr(expr: Expr, env: Environment, state: State) -> EVal:
+    # Identifier
     if isinstance(expr, str):
-        val = lookup(env, expr)
-        if isinstance(val, Complex):
+        dval = lookup(env, expr)
+
+        if isinstance(dval, Loc):
+            val = access(state, dval)
+            if not isinstance(val, Complex):
+                raise ValueError(f"{expr} is not a complex")
             return val
-        raise ValueError(f"Identifier '{expr}' is not a complex")
+
+        if isinstance(dval, str):
+            # singleton complex [v]
+            uf = UnionFind[VertexName]()
+            uf.add(dval)
+            return Complex({frozenset({dval})}, uf)
+
+        raise ValueError(f"Identifier '{expr}' is not a value")
     
+    # Complex Literal
     if isinstance(expr, ComplexLiteral):
-        complex = frozenset(expr.vertices)
+        simplex = frozenset(expr.vertices)
+
         uf = UnionFind[VertexName]()
         for v in expr.vertices:
             uf.add(v)
 
-        update_vertices_order(Complex({complex}, uf))
+        return Complex({simplex}, uf)
+    
+    # Integer Literal
+    if isinstance(expr, IntLiteral):
+        return expr.value
+    
+    # Operator Call Expression
+    if isinstance(expr, OpCall):
+        if isinstance(expr, OpCall):
+            op = lookup(env, expr.op)
 
-        return Complex({complex}, uf)
+        if not isinstance(op, Operator):
+            raise ValueError(f"{expr.op} is not an operator")
+
+        arg_vals = [evaluate_expr(a, env, state) for a in expr.args]
+
+        return op.apply(arg_vals, mapping=expr.mapping, state=state)
+
+    # Function Call Expression
+    if isinstance(expr, FunCall):
+        raise NotImplementedError("Function calls are not implemented yet")
+        
+    raise TypeError(f"Unknown expression type: {expr}")
 
 
-    if isinstance(expr, OpExpr):
-        op_fun = lookup(env, expr.op)
-        if not callable(op_fun):
-            raise ValueError(f"Identifier '{expr.op}' is not an operation")
+from parser import ComplexDecl, Assign, IfCmd, WhileCmd
+def execute_command(cmd: Command, env: Environment, state: State) -> tuple[Environment, State]:
+    match cmd:
+        case ComplexDecl(name=name, expr=expr):
+            complex_val = evaluate_expr(expr, env, state)
 
-        K1 = eval_expr(env, expr.left)
-        K2 = eval_expr(env, expr.right)
+            if not isinstance(complex_val, Complex):
+                raise ValueError(f"Expression does not evaluate to a complex")
 
-        if expr.op == "glue":
-            if expr.mapping is None:
-                raise ValueError("glue operation requires a mapping")
-            return op_fun(K1, K2, expr.mapping)
-        else:
-            return op_fun(K1, K2)
+            state1 = ensure_vertices_order(state, complex_val.vertices)
+            
+            loc, state2 = allocate(state1, complex_val)
 
-    raise TypeError("Unknown expr")
+            env1 = bind(env, name, loc)
+            return env1, state2
+        
+        case VertexDecl(name):
+            v, state1 = fresh_vertex(state)
+            env1 = bind(env, name, v)
+            return env1, state1
+        
+        case Assign(name=name, expr=expr):
+            dval = lookup(env, name)
+            match dval:
+                case Loc(addr=addr) as loc:
+                    value = evaluate_expr(expr, env, state)
 
-def eval_stmt(env: Environment, stmt: Statement) -> Environment:
-    match stmt:
-        case ComplexStmt(name=name, expr=expr):
-            complex = eval_expr(env, expr)
-            return bind(env, name, complex)
+                    if not isinstance(value, Complex):
+                        raise ValueError(f"Expression does not evaluate to a complex")
+                    
+                    state1 = update(state, addr, value)
+                    return env, state1
+                case _:
+                    raise ValueError(f"Identifier '{name}' is not a variable")
+
+        case IfCmd(cond, then_branch, else_branch):
+            cond_val = evaluate_expr(cond, env, state)
+
+            print(cond_val)
+
+            if not isinstance(cond_val, int):
+                raise ValueError("Condition expression does not evaluate to an integer")
+            
+            saved_next_loc = state.next_loc
+
+            if cond_val:
+                _, state1 = execute_command_seq(then_branch, env, state)
+                #Restore next_loc after block
+                state2 = State(store = state1.store, next_loc = saved_next_loc, vertices_order = state1.vertices_order, new_vertex_id = state1.new_vertex_id)
+                return env, state2
+            else:
+                _, state1 = execute_command_seq(else_branch, env, state)
+                state2 = State(store = state1.store, next_loc = saved_next_loc, vertices_order = state1.vertices_order, new_vertex_id = state1.new_vertex_id)
+                return env, state2
+
+        case WhileCmd(cond, body):
+            current_state = state
+
+            while True:
+                cond_val = evaluate_expr(cond, env, current_state)
+
+                if not isinstance(cond_val, int):
+                    raise ValueError("Condition must be integer")
+
+                if not cond_val:
+                    return env, current_state
+
+                _, current_state = execute_command_seq(body, env, current_state)
+
+            
         case _:
-            raise ValueError(f"Unknown statement: {stmt}")
+            raise ValueError(f"Command type '{type(cmd)}' not implemented yet")
 
+def execute_command_seq(seq: Program, env: Environment, state: State) -> tuple[Environment, State]:
+    current_env = env
+    current_state = state
 
-vertices_order: List[VertexName] = []
-def eval_program(statements: Program) -> Environment:
-    vertices_order.clear()
+    for cmd in seq:
+        current_env, current_state = execute_command(cmd, current_env, current_state)
 
-    env = initial_environment()
-    print(env)
-    for stmt in statements:
-        env = eval_stmt(env, stmt)
-    return env
+    return current_env, current_state
+
+def eval_program(ast: Program) -> tuple[Environment, State]:
+    env, state = initial_env_state()
+    env1, state1 = execute_command_seq(ast, env, state)
+    return env1, state1
+
+if __name__ == "__main__":
+    sample_program = """
+    complex X = [v1, v2]
+complex w = [v2]
+
+while sub(num_vert(X),5) do
+    vertex v
+    w <- pick_vert(X)   // now returns a Complex with a deterministic single vertex
+    X <- union(X, join(w, v))
+endwhile
+
+X <- glue(X, X) mapping {v1 -> __v1}
+
+    """
+    
+    cmds = parse_ast(sample_program)
+    env, state = initial_env_state()
+    env, state = execute_command_seq(cmds, env, state)
+
+    print("Final Environment:", env)
+    print("Final State:", state)

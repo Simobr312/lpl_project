@@ -4,35 +4,40 @@ from pydantic import BaseModel
 from fastapi.staticfiles import StaticFiles
 
 from parser import parse_ast
-from core import Complex, eval_program, lookup
+from complex import Complex
+from core import eval_program, lookup, Loc
 
 app = FastAPI()
 
 class ProgramInput(BaseModel):
     program: str
 
-
 @app.post("/run_program")
 def run_program(data: ProgramInput):
     try:
         ast = parse_ast(data.program)
-        env = eval_program(ast)
+        env, state = eval_program(ast)
 
         complexes_json = {}
 
-        for name in env.keys():
+        for name, dval in env.items():
+            if not isinstance(dval, Loc):
+                continue
+
             try:
-                c = lookup(env, name)
-                print(c)
-                if(isinstance(c, Complex)):
+                value = state.store[dval.addr]
+
+                if isinstance(value, Complex):
                     complexes_json[name] = {
-                        "dimension": c.dimension,
-                        "simplices": [list(s) for s in c.maximal_simplices],
-                        "vertices": list(c.vertices),
-                        "classes": {k: list(v) for k, v in c.classes.items()}
+                        "dimension": value.dimension,
+                        "simplices": [list(s) for s in value.maximal_simplices],
+                        "vertices": list(value.vertices),
+                        "classes": {
+                            k: list(v) for k, v in value.classes.items()
+                        }
                     }
-            except Exception:
-                pass
+            except KeyError:
+                continue
 
         return {
             "success": True,

@@ -2,36 +2,65 @@ from lark import Lark, Token, Tree
 from dataclasses import dataclass
 from typing import Dict, List, FrozenSet
 
-defined_operations = {"union", "glue", "join"}
+defined_operations = {"union", "glue", "join", "dimension", "num_simplices", "num_vertices"}
 
 # Parser grammar
 grammar = r"""
-    program: statement*
+    program: command*
 
-    statement: "complex" IDENT "=" expr -> statement
+    ?command: complex_decl
+            | assign
+            | vertex_decl
+            | if_cmd
+            | while_cmd
+            | function_decl
 
-    ?expr: operation | IDENT | vertices_list | "(" expr ")"
+    complex_decl: "complex" IDENT "=" expr
+    assign: IDENT "<-" expr
+    vertex_decl: "vertex" IDENT
 
-    operation: OP "(" expr "," expr ")" ["mapping" mapping_block]
+    if_cmd: "if" expr "then" command* "else" command* "endif"
+    while_cmd: "while" expr "do" command* "endwhile"
 
+    function_decl: "function" IDENT "(" param_list? ")" "begin" command* return_cmd "endfunction"
+    return_cmd: "return" expr
+
+    ?expr: op_call
+        | function_call
+        | IDENT
+        | vertices_list
+        | NUMBER
+        | "(" expr ")"
+
+    op_call: OP "(" arg_list? ")" ["mapping" mapping_block]
+
+    function_call: IDENT "(" arg_list? ")"
+    
+    
     vertices_list: "[" id_list "]"
     id_list: IDENT ("," IDENT)*
+
+    param_list: IDENT ("," IDENT)*
+    arg_list: expr ("," expr)*
 
     mapping_block: "{" mapping_list "}"
     mapping_list: mapping_pair ("," mapping_pair)*
     mapping_pair: IDENT "->" IDENT
-
+            
     OP: /[a-zA-Z_][a-zA-Z0-9_]*/
     IDENT: /[A-Za-z_][A-Za-z0-9_]*/
+    NUMBER: /[0-9]+/
 
     COMMENT: "//" /[^\n]/* | "\#" /(.|\n)*?/
     %ignore COMMENT
     %import common.WS
     %ignore WS
-
 """
 
 parser = Lark(grammar, start="program")
+
+from dataclasses import dataclass
+from typing import List, Dict, Optional, Union
 
 type Ref = str
 
@@ -39,84 +68,190 @@ type Ref = str
 class ComplexLiteral:
     vertices: List[Ref]
 
-type Expr = Ref | OpExpr
-
 @dataclass
-class OpExpr:
+class OpCall:
     op: str
-    left: "Expr"
-    right: "Expr"
-    mapping: dict[str, str] | None
-
-
-type Statement = ComplexStmt
-type Program = List[Statement]
+    args: List["Expr"]
+    mapping: Dict[str, str] | None
 
 @dataclass
-class ComplexStmt:
+class IntLiteral:
+    value: int
+
+@dataclass
+class FunCall:
+    name: str
+    args: List["Expr"]
+
+Expr = Ref | ComplexLiteral | OpCall | IntLiteral | FunCall
+
+# == Commands == #
+
+@dataclass
+class ComplexDecl:
     name: str
     expr: Expr
 
-        
-def transform_expr_tree(tree: Tree) -> Expr:
+@dataclass
+class Assign:
+    name: str
+    expr: Expr
+
+@dataclass
+class VertexDecl:
+    name: str
+
+@dataclass
+class IfCmd:
+    cond: Expr
+    then_branch: List["Command"]
+    else_branch: List["Command"]
+
+@dataclass
+class WhileCmd:
+    cond: Expr
+    body: List["Command"]
+
+@dataclass
+class FunctionDecl:
+    name: str
+    params: List[str]
+    body: List["Command"]
+    ret: Expr
+
+@dataclass
+class ReturnCmd:
+    expr: Expr
+
+type Command = ComplexDecl | Assign | VertexDecl | IfCmd | WhileCmd | FunctionDecl | ReturnCmd
+
+type Program = List[Command]
+
+
+def transform_expr_tree(tree) -> Expr:
     match tree:
-        case Tree(data="paren", children=[sub]):
-            return transform_expr_tree(sub)
-        
-        case Tree(data="vertices_list", children=[id_list]):
-            vertices = [tok.value for tok in id_list.children]
-            return ComplexLiteral(vertices=vertices)
-        
-        case Tree("operation", 
-                  children = [op, left, right, mapping_block]):
-            if op not in defined_operations:
-                raise ValueError(f"Undefined operation: {op}")
-            
-            mapping_dict = None
-            if mapping_block:
-                mapping_dict = {
+        case Tree("vertices_list", [id_list]):
+            return ComplexLiteral(
+                [tok.value for tok in id_list.children]
+            )
+
+        case Tree("op_call", children):
+            op = children[0].value
+
+            args = []
+            mapping = None
+
+            # arg_list present?
+            if len(children) >= 2 and isinstance(children[1], Tree) and children[1].data == "arg_list":
+                args = [transform_expr_tree(a) for a in children[1].children]
+
+            # mapping present?
+            if children and isinstance(children[-1], Tree) and children[-1].data == "mapping_block":
+                mapping = {
                     p.children[0].value: p.children[1].value
-                    for p in mapping_block.children[0].children
+                    for p in children[-1].children[0].children
                 }
 
-            return OpExpr(op, transform_expr_tree(left), transform_expr_tree(right), mapping_dict)
-        
-        case Token(type="IDENT", value=name):
-            return name
-        case x:
-            raise ValueError(f"Unexpected parse tree for expression: {tree}")
-        
-def transform_command_tree(tree: Tree) -> Statement:
-    match tree:
-        case Tree(data="statement", children = [
-            Token(type="IDENT", value = name),
-            expr_tree
-        ]):
-            return ComplexStmt(
-                name=name,
-                expr = transform_expr_tree(expr_tree)
-            )
-            
-        case _:
-            raise ValueError(f"Unexpected parse tree for statement: {tree}")
+            return OpCall(op, args, mapping)
 
-def transform_program_tree(tree: Tree) -> Program:
-    program: Program = []
-    match tree:
-        case Tree(data="program", children=statements):
-            for stmt_tree in statements:
-                stmt = transform_command_tree(stmt_tree)
-                program.append(stmt)
-            return program
+        case Tree("function_call", [Token("IDENT", name), *args]):
+            arg_exprs = (
+                [transform_expr_tree(a) for a in args[0].children]
+                if args else []
+            )
+            return FunCall(name, arg_exprs)
+
+        case Token("IDENT", name):
+            return name
+
+        case Token("NUMBER", value):
+            return IntLiteral(int(value))
+
+        case Tree("expr", [sub]):
+            return transform_expr_tree(sub)
+
         case _:
-            raise ValueError(f"Unexpected parse tree for program: {tree}")
+            raise ValueError(f"Unexpected expression tree: {tree}")
+
+        
+def transform_command_tree(tree) -> Command:
+    match tree:
+        case Tree("complex_decl", [Token("IDENT", name), expr]):
+            return ComplexDecl(name, transform_expr_tree(expr))
+
+        case Tree("assign", [Token("IDENT", name), expr]):
+            return Assign(name, transform_expr_tree(expr))
+        
+        case Tree("vertex_decl", [Token("IDENT", name)]):
+            return VertexDecl(name)
+
+        case Tree("if_cmd", children):
+            cond = transform_expr_tree(children[0])
+            then_cmds = []
+            else_cmds = []
+
+            i = 1
+            while i < len(children) and children[i].data == "command":
+                then_cmds.append(transform_command_tree(children[i]))
+                i += 1
+
+            while i < len(children):
+                else_cmds.append(transform_command_tree(children[i]))
+                i += 1
+
+            return IfCmd(cond, then_cmds, else_cmds)
+
+        case Tree("while_cmd", children):
+            cond = transform_expr_tree(children[0])
+            body = [transform_command_tree(c) for c in children[1:]]
+            return WhileCmd(cond, body)
+
+        case Tree("function_decl", children):
+            name = children[0].value
+            params = (
+                [p.value for p in children[1].children]
+                if isinstance(children[1], Tree)
+                else []
+            )
+
+            body_cmds = []
+            for c in children[2:-1]:
+                body_cmds.append(transform_command_tree(c))
+
+            ret = transform_expr_tree(children[-1].children[0])
+
+            return FunctionDecl(name, params, body_cmds, ret)
+
+        case Tree("return_cmd", [expr]):
+            return ReturnCmd(transform_expr_tree(expr))
+
+        case _:
+            raise ValueError(f"Unexpected command tree: {tree}")
 
 
 def parse_ast(source_code: str) -> Program:
+    parser = Lark(grammar, start="program")
+    tree = parser.parse(source_code)
 
-    parse_tree = parser.parse(source_code)
-    ast = transform_program_tree(parse_tree)
+    return [
+        transform_command_tree(cmd)
+        for cmd in tree.children
+    ]
 
-    print("AST:", ast)
+if __name__ == "__main__":
+    sample_code = """
+    complex K = [a,b,c]
+    complex L = [b,c,d]
 
-    return ast
+    complex M = union(K, L)
+
+    if dim(M) then
+        M <- glue(M, K) mapping { b->b }
+    else
+    
+    endif
+    """
+
+    ast = parse_ast(sample_code)
+    for cmd in ast:
+        print(cmd)

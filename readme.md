@@ -14,7 +14,7 @@ The language allows users to **construct, combine, inspect, and reason** about *
 
 A web-based 3D visualization interface is provided to render simplicial complexes defined in the language.
 
-## Deisgn Philosophy
+## Design Philosophy
 The language is built around three guiding principles:
 
 - **Mathematical Faithfulness**
@@ -164,7 +164,8 @@ The files of the project will be organized as follows:
 ```
 - /src: Contains the source code of the language implementation.
     - /parser.py: Code for parsing the DSL syntax.
-    - /interpreter.py: Main interpreter and semantic analysis.
+    - /core.py: Main interpreter and semantic analysis.
+    - /homology.py: Code for computing homological invariants.
     - /visualization : Code related to 3D visualization.
         -/frontend: Frontend code for visualization using Three.js.
         -server.py: Backend server to serve the visualization.
