@@ -107,7 +107,7 @@ It is possible to nest operations, for example:
 complex K4 = union(K1, glue(K2, K3) mapping {C2 -> D3})
 ```
 
-There are other operations which are discussed in the documentation.
+There are other operations which are not discussede here for brevity, for more details see `docs/semantics.md`.
 
 ## Observational Operations
 
@@ -123,6 +123,8 @@ Calculate the Betti numbers of a simplicial complex.
    betti(K1, [n])
    ```
    returns the n-th Betti number of the complex $K$.
+
+there are other operations which are not discussed here for brevity, for more details see `docs/semantics.md`.
 
 ## Control Flow Structures
 

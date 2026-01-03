@@ -94,61 +94,66 @@ def union(K1: Complex, K2: Complex) -> Complex:
     return Complex(maximal_simplices=new_simplices, uf=new_uf)
 
 def glue(K1: Complex, K2: Complex, mapping: Dict[VertexName, VertexName]) -> Complex:
-    """Returns the glueing of two simplicial complexes along a vertex mapping, with full semantic checks."""
+    """
+    Glue two simplicial complexes using a mapping.
+    The mapping can be specified using any vertex from each equivalence class.
+    Internally, it is normalized to canonical representatives.
+    """
 
-    V1 = K1.vertices
-    V2 = K2.vertices
 
+
+    # --- Step 1: normalize mapping keys/values to representatives ---
+    rep_map: Dict[VertexName, VertexName] = {}
     for a, b in mapping.items():
-        if a not in V1:
-            raise ValueError(f"glue(): vertex '{a}' is not in the first complex.")
-        if b not in V2:
-            raise ValueError(f"glue(): vertex '{b}' is not in the second complex.")
+        # normalize to representatives first
+        ra = K1.uf.find(a)
+        rb = K2.uf.find(b)
 
-    inv = {}
-    for a, b in mapping.items():
-        if a in inv and inv[a] != b:
+        # now check representatives exist
+        if ra not in K1.vertices:
+            raise ValueError(f"glue(): vertex '{a}' (rep {ra}) is not in the first complex.")
+        if rb not in K2.vertices:
+            raise ValueError(f"glue(): vertex '{b}' (rep {rb}) is not in the second complex.")
+
+        # check for conflicting mappings
+        if ra in rep_map and rep_map[ra] != rb:
             raise ValueError(
-                f"glue(): vertex '{a}' is mapped to two different targets: "
-                f"{inv[a]} and {b}."
+                f"glue(): conflicting mapping for class '{ra}': {rep_map[ra]} vs {rb}"
             )
-        inv[a] = b
 
-    items = list(mapping.items())
-    for i in range(len(items)):
-        a1, b1 = items[i]
-        for j in range(i + 1, len(items)):
-            a2, b2 = items[j]
-            eq1 = K1.uf.find(a1) == K1.uf.find(a2)
-            eq2 = K2.uf.find(b1) == K2.uf.find(b2)
+        rep_map[ra] = rb
 
-            if eq1 != eq2:
-                raise ValueError(
-                    f"glue(): incompatible identifications: "
-                    f"{a1}~{a2} in K1 but {b1}~{b2} is "
-                    f"{'not ' if not eq2 else ''}true in K2."
-                )
 
+    # --- Step 2: merge union-finds ---
     new_uf = K1.uf.merge(K2.uf)
 
-    for a, b in mapping.items():
-        new_uf.union(a, b)
+    # --- Step 3: extend mapping to entire equivalence classes ---
+    for ra, rb in rep_map.items():
+        class_a = K1.uf.get_classes()[ra]
+        class_b = K2.uf.get_classes()[rb]
 
+        # Union representatives
+        new_uf.union(ra, rb)
+
+        # Ensure full class collapse
+        for x in class_a:
+            new_uf.union(x, rb)
+        for y in class_b:
+            new_uf.union(ra, y)
+
+    # --- Step 4: canonicalize simplices ---
     new_simplices = set()
-
     for s in K1.maximal_simplices | K2.maximal_simplices:
-
         canon = frozenset(new_uf.find(v) for v in s)
-
         if len(canon) != len(s):
             raise ValueError(
-                f"glue(): the simplex {s} collapsed to {canon} "
-                f"after vertex identifications."
+                f"glue(): simplex {s} collapsed to {canon} after vertex identifications."
             )
-
         new_simplices.add(canon)
 
     return Complex(maximal_simplices=new_simplices, uf=new_uf)
+
+
 
 def join(K1: Complex, K2: Complex) -> Complex:
     new_uf = K1.uf.merge(K2.uf)

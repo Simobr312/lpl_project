@@ -44,13 +44,24 @@ class UnionFind(Generic[T]):
             rep = self.find(x)
             out.setdefault(rep, set()).add(x)
         return out
+    
+    def get_nodes(self) -> Set[T]:
+        return set(self.parent.keys())
 
-    def merge(self, other: "UnionFind[T]") -> "UnionFind[T]":
-        new_uf = UnionFind[T]()
-
-        for x in self.parent:
-            new_uf.add(x)
-        for x in other.parent:
-            new_uf.add(x)
-            
+    def merge(self, other: UnionFind) -> "UnionFind":
+        new_uf = UnionFind()
+        # add all nodes
+        for v in self.get_nodes() | other.get_nodes():
+            new_uf.add(v)
+        # union all equivalences from self
+        for cls in self.get_classes().values():
+            nodes = list(cls)
+            for i in range(1, len(nodes)):
+                new_uf.union(nodes[0], nodes[i])
+        # union all equivalences from other
+        for cls in other.get_classes().values():
+            nodes = list(cls)
+            for i in range(1, len(nodes)):
+                new_uf.union(nodes[0], nodes[i])
         return new_uf
+

@@ -1,0 +1,13 @@
+complex X = [v1]
+
+while sub(num_vert(X), 23) do
+    vertex v2
+    vertex v3
+    complex L = join(v2, v3)
+    X <- union(X, join(pick_vert(X), L))
+endwhile
+
+X <- glue (X, X) mapping {__v0 -> __v20, __v1 -> __v21}
+X <- glue (X, X) mapping {__v0 -> __v10, __v21 -> __v11}
+
+X <- glue (X, X) mapping {__v1 -> __v4}
