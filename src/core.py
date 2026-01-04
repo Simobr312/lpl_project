@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 from abc import ABC, abstractmethod
 
-from parser import VertexDecl, parse_ast, Command, Expr, Program, IntLiteral
+from parser import FunctionDecl, VertexDecl, parse_ast, Command, Expr, Program, IntLiteral
 from complex import Complex, VertexName, pick_vertex
 from union_find import UnionFind
 
@@ -12,14 +12,18 @@ from union_find import UnionFind
 class Loc:
     addr: int
 
-type EVal = Complex | int
+@dataclass
+class Closure:
+    function: FunctionDecl
+    env: Environment
+
+type EVal = Complex | int | bool | Closure
 type MVal = Complex
-type DVal = EVal | Loc | Operator | int | VertexName
+type DVal = EVal | Loc | Operator | int | VertexName | Closure
 
 type Environment = Dict[str, DVal]
 
 # == State Management == #
-
 @dataclass
 class State:
     store: Dict[int, MVal]
@@ -131,8 +135,6 @@ class ConstructiveOperator(Operator):
 
         if len(args) == 1:
             return self.fn(args[0])
-        
-        
 
         # Variadic fold
         result = args[0]
@@ -240,6 +242,9 @@ def evaluate_expr(expr: Expr, env: Environment, state: State) -> EVal:
             if not isinstance(val, Complex):
                 raise ValueError(f"{expr} is not a complex")
             return val
+    
+        if isinstance(dval, (Complex, int, Closure)):
+            return dval
 
         if isinstance(dval, str):
             # singleton complex [v]
@@ -277,7 +282,27 @@ def evaluate_expr(expr: Expr, env: Environment, state: State) -> EVal:
 
     # Function Call Expression
     if isinstance(expr, FunCall):
-        raise NotImplementedError("Function calls are not implemented yet")
+        dval = lookup(env, expr.name)
+        if not isinstance(dval, Closure):
+            raise ValueError(f"{expr.name} is not a function")
+
+        closure: Closure = dval
+        params = closure.function.params
+        args = expr.args
+
+        if len(args) != len(params):
+            raise ValueError(
+                f"Function {expr.name} expects {len(params)} args, got {len(args)}"
+            )
+
+        arg_vals = [evaluate_expr(a, env, state) for a in args]
+
+        call_env = closure.env
+
+        for p, v in zip(params, arg_vals):
+            call_env = bind(call_env, p, v)
+
+        return evaluate_expr(closure.function.body, call_env, state)
         
     raise TypeError(f"Unknown expression type: {expr}")
 
@@ -351,7 +376,11 @@ def execute_command(cmd: Command, env: Environment, state: State) -> tuple[Envir
 
                 _, current_state = execute_command_seq(body, env, current_state)
 
-            
+        case FunctionDecl(name, params, body):
+            closure = Closure(function=cmd, env=env.copy())
+            new_env = bind(env, name, closure)
+            return new_env, state    
+        
         case _:
             raise ValueError(f"Command type '{type(cmd)}' not implemented yet")
 
@@ -371,17 +400,12 @@ def eval_program(ast: Program) -> tuple[Environment, State]:
 
 if __name__ == "__main__":
     sample_program = """
-    complex X = [v1, v2]
-complex w = [v2]
+    complex K = [a,b,c]
 
-while sub(num_vert(X),5) do
-    vertex v
-    w <- pick_vert(X)   // now returns a Complex with a deterministic single vertex
-    X <- union(X, join(w, v))
-endwhile
+    function f(x) = union(x, K)
 
-X <- glue(X, X) mapping {v1 -> __v1}
-
+    complex L = [d,e]
+    complex M = f(L)
     """
     
     cmds = parse_ast(sample_program)

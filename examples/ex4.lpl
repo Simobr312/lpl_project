@@ -1,0 +1,13 @@
+complex X = [v0]
+
+
+while sub(num_vert(X), 136) do
+    vertex v
+    complex Y = union([v0], v)
+    while sub(num_vert(Y), 6) do
+        vertex w
+        vertex z
+        Y <- join(Y, union(w,z))
+    endwhile
+    X <- union(X, Y)
+endwhile

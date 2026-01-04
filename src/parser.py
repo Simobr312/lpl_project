@@ -2,10 +2,15 @@ from lark import Lark, Token, Tree
 from dataclasses import dataclass
 from typing import Dict, List, FrozenSet
 
-defined_operations = {"union", "glue", "join", "dimension", "num_simplices", "num_vertices"}
+constructive_operations = {"union", "glue", "join", "dimension", "num_simplices", "num_vertices", "pick_vert"}
+observational_operations = {"dim", "num_vert" }
+other_operations = {"add", "sub", "mul", "not", "and", "or"}
+
+defined_operations = constructive_operations | observational_operations | other_operations
+op_regex = "|".join(defined_operations)
 
 # Parser grammar
-grammar = r"""
+grammar = fr"""
     program: command*
 
     ?command: complex_decl
@@ -19,11 +24,10 @@ grammar = r"""
     assign: IDENT "<-" expr
     vertex_decl: "vertex" IDENT
 
-    if_cmd: "if" expr "then" command* "else" command* "endif"
+    if_cmd: "if" expr "then" command* ["else" command*] "endif"
     while_cmd: "while" expr "do" command* "endwhile"
 
-    function_decl: "function" IDENT "(" param_list? ")" "begin" command* return_cmd "endfunction"
-    return_cmd: "return" expr
+    function_decl: "function" IDENT "(" param_list? ")" "=" expr
 
     ?expr: op_call
         | function_call
@@ -36,24 +40,22 @@ grammar = r"""
 
     function_call: IDENT "(" arg_list? ")"
     
-    
     vertices_list: "[" id_list "]"
     id_list: IDENT ("," IDENT)*
 
     param_list: IDENT ("," IDENT)*
     arg_list: expr ("," expr)*
 
-    mapping_block: "{" mapping_list "}"
+    mapping_block: mapping_list
     mapping_list: mapping_pair ("," mapping_pair)*
     mapping_pair: IDENT "->" IDENT
             
-    OP: /[a-zA-Z_][a-zA-Z0-9_]*/
+    OP: /{op_regex}/
     IDENT: /[A-Za-z_][A-Za-z0-9_]*/
     NUMBER: /[0-9]+/
 
-    COMMENT: "//" /[^\n]/* | "\#" /(.|\n)*?/
-    %ignore COMMENT
-    %import common.WS
+    COMMENT: "//" /[^\n]/*  "\n"
+    WS: /[ \t\f\r\n]+/
     %ignore WS
 """
 
@@ -116,8 +118,7 @@ class WhileCmd:
 class FunctionDecl:
     name: str
     params: List[str]
-    body: List["Command"]
-    ret: Expr
+    body: Expr
 
 @dataclass
 class ReturnCmd:
@@ -141,11 +142,9 @@ def transform_expr_tree(tree) -> Expr:
             args = []
             mapping = None
 
-            # arg_list present?
             if len(children) >= 2 and isinstance(children[1], Tree) and children[1].data == "arg_list":
                 args = [transform_expr_tree(a) for a in children[1].children]
 
-            # mapping present?
             if children and isinstance(children[-1], Tree) and children[-1].data == "mapping_block":
                 mapping = {
                     p.children[0].value: p.children[1].value
@@ -154,12 +153,14 @@ def transform_expr_tree(tree) -> Expr:
 
             return OpCall(op, args, mapping)
 
-        case Tree("function_call", [Token("IDENT", name), *args]):
-            arg_exprs = (
-                [transform_expr_tree(a) for a in args[0].children]
-                if args else []
-            )
-            return FunCall(name, arg_exprs)
+        case Tree("function_call", [Token("IDENT", name), *rest]):
+            if rest:
+                arg_list_tree = rest[0]
+                args_exprs = [transform_expr_tree(a) for a in arg_list_tree.children]
+            else:
+                args_exprs = []
+            return FunCall(name, args_exprs)
+
 
         case Token("IDENT", name):
             return name
@@ -208,19 +209,16 @@ def transform_command_tree(tree) -> Command:
 
         case Tree("function_decl", children):
             name = children[0].value
-            params = (
-                [p.value for p in children[1].children]
-                if isinstance(children[1], Tree)
-                else []
-            )
+            params = []
+            body = None
 
-            body_cmds = []
-            for c in children[2:-1]:
-                body_cmds.append(transform_command_tree(c))
+            if isinstance(children[1], Tree) and children[1].data == "param_list":
+                params = [tok.value for tok in children[1].children]
+                body = transform_expr_tree(children[2])
+            else:
+                body = transform_expr_tree(children[1])
 
-            ret = transform_expr_tree(children[-1].children[0])
-
-            return FunctionDecl(name, params, body_cmds, ret)
+            return FunctionDecl(name, params, body)
 
         case Tree("return_cmd", [expr]):
             return ReturnCmd(transform_expr_tree(expr))

@@ -6,6 +6,7 @@ from fastapi.staticfiles import StaticFiles
 from parser import parse_ast
 from complex import Complex
 from core import eval_program, lookup, Loc
+from signal import signal, SIGALRM, alarm
 
 app = FastAPI()
 
@@ -16,6 +17,7 @@ class ProgramInput(BaseModel):
 def run_program(data: ProgramInput):
     try:
         ast = parse_ast(data.program)
+        
         env, state = eval_program(ast)
 
         complexes_json = {}
