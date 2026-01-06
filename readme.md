@@ -76,7 +76,7 @@ complex S1 = [A, B, C]
 complex S2 = [D, E]
 ```
 
-It is important to note that simplices respect the propriety that every non-empty subset of a simplex is also a simplex, and so the real meaning of 
+It is important to note that simplices respect the property that every non-empty subset of a simplex is also a simplex, and so the real meaning of 
 
 ```
 complex S1 = [A, B, C]
@@ -96,7 +96,7 @@ Create a new simplicial complex by gluing two simplicial complexes along specifi
 
 For example:
 ```   
-complex K3 = glue(K1, K2) mapping {A1 -> A2, B1 -> B2}
+complex K3 = glue(K1, K2) mapping A1 -> A2, B1 -> B2
 ```
 
 Gluing identifies specified vertices of one complex with those of another.

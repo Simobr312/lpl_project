@@ -1,9 +1,11 @@
+/* ---------- Base Layout ---------- */
+
 body {
     margin: 0;
-    font-family: sans-serif;
     height: 100vh;
     display: flex;
     flex-direction: column;
+    font-family: sans-serif;
 }
 
 header {
@@ -15,6 +17,14 @@ header {
     justify-content: space-between;
 }
 
+main {
+    display: flex;
+    flex: 1;
+    height: calc(100vh - 60px);
+}
+
+/* ---------- Buttons ---------- */
+
 button {
     padding: 8px 14px;
     font-size: 15px;
@@ -23,11 +33,7 @@ button {
     cursor: pointer;
 }
 
-main {
-    display: flex;
-    flex: 1;
-    height: calc(100vh - 60px);
-}
+/* ---------- Editor / Output Panels ---------- */
 
 #editorContainer {
     width: 60%;
@@ -36,7 +42,8 @@ main {
 }
 
 #outputPanel {
-    width: 40%;
+    color: #ccc;
+    width: 80%;
     padding: 10px;
     overflow-y: auto;
     background: #f7f7f7;
@@ -46,46 +53,89 @@ main {
 }
 
 #outputPanel h2 {
+    color: #222;
     margin-top: 0;
 }
 
 #outputArea {
-    white-space: pre-wrap;
-    background: #eee;
-    padding: 10px;
-    border-radius: 4px;
+    color: #ccc;
     max-height: 95%;
+    padding: 10px;
     overflow-y: auto;
+    white-space: pre-wrap;
+    background: #222222;
+    border-radius: 4px;
 }
+
+/* ---------- Output Cards ---------- */
 
 .output-card {
-    background: #1e1e1e;
-    color: #eee;
-    padding: 12px 16px;
-    margin-bottom: 12px;
-    border-radius: 8px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.25);
-    border: 1px solid #333;
-}
-
-.output-card h3 {
-    margin-top: 0;
-    border-bottom: 1px solid #444;
-    padding-bottom: 4px;
-    margin-bottom: 8px;
-    font-size: 1.1rem;
-}
-
-.output-section {
+    position: relative;  
+    color: #ccc;
+    padding: 6px 8px;
     margin-bottom: 6px;
+    border-radius: 6px;
+    font-size: 13px;
 }
 
-.output-section-title {
-    font-weight: bold;
+.output-card-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.output-card-title {
+    font-weight: 700;
+    font-size: 14px;
+    margin-bottom: 6px;
+    color: #9cdcfe;
+    text-align: center;
+}
+
+/* ---------- Card Content ---------- */
+
+.output-card-info {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 2px 8px;
+    line-height: 1.25;
+    flex: 1;
+}
+
+.output-card .row {
+    display: contents;
+}
+
+.output-card span {
+    margin: 0;
+    padding: 0;
+}
+
+/* ---------- Labels ---------- */
+
+.label,
+.output-card .label {
+    font-weight: 600;
+    white-space: nowrap;
     color: #9cdcfe;
 }
 
-.output-list {
-    margin-left: 12px;
+/* ---------- Render Button ---------- */
+
+button {
+    background-color: #9cdcfe;
 }
+
+.render-btn,
+.output-card button {
+    position: absolute;
+    top: 0;
+    right: 5px;
+    padding: 4px 10px;
+    font-size: 12px;    
+    white-space: nowrap;
+    border-style: none;
+}
+
+
 

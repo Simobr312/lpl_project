@@ -195,7 +195,7 @@ def initial_env_state() -> tuple[Environment, State]:
     )
 
     env = bind(env, "pick_vert",
-        ConstructiveOperator("pick_vert", pick_vertex, (Complex, int), Complex)
+        ConstructiveOperator("pick_vert", pick_vertex, (Complex,), Complex)
     )
 
     # Observational
@@ -247,7 +247,6 @@ def evaluate_expr(expr: Expr, env: Environment, state: State) -> EVal:
             return dval
 
         if isinstance(dval, str):
-            # singleton complex [v]
             uf = UnionFind[VertexName]()
             uf.add(dval)
             return Complex({frozenset({dval})}, uf)
@@ -377,7 +376,7 @@ def execute_command(cmd: Command, env: Environment, state: State) -> tuple[Envir
                 _, current_state = execute_command_seq(body, env, current_state)
 
         case FunctionDecl(name, params, body):
-            closure = Closure(function=cmd, env=env.copy())
+            closure = Closure(function=cmd, env=env)
             new_env = bind(env, name, closure)
             return new_env, state    
         

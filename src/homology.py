@@ -3,7 +3,8 @@ from typing import List, Set, FrozenSet, Dict, Tuple
 
 from parser import parse_ast
 from union_find import UnionFind
-from core import Complex, Simplex, eval_program, lookup
+from core import Loc, eval_program, lookup, access
+from complex import Complex, Simplex
 
 import numpy
 
@@ -31,7 +32,6 @@ def ordered(simplex: Simplex, complex: Complex) -> Tuple[str, ...]:
 
 
 import numpy as np
-
 
 def boundary_matrix(complex: Complex, k: int) -> np.ndarray:
     """Constructs the boundary matrix d_k: C_k -> C_{k-1} over F_2."""
@@ -103,8 +103,17 @@ def homology_rank(complex: Complex, k: int) -> int:
 
     return dimKer_dk - rank_dk1
 
-def compute_homology(complex: Complex):
+def compute_homology(complex: Complex) -> Dict[int, int]:
     """Computes the homology groups of the complex and returns the rank of each group."""
+    homology: Dict[int, int] = {}
+    for k in range(0, complex.dimension + 1):
+        rank = homology_rank(complex, k)
+        homology[k] = rank
+    return homology
+
+def print_homology(complex: Complex):
+    """Computes the homology groups of the complex and returns the rank of each group."""
+    
     for k in range(0, complex.dimension + 1):
         k_simp = k_simplices(complex, k)
         print(f"{k}-simplices: {[ordered(s, complex) for s in k_simp]}")
@@ -118,16 +127,14 @@ def main():
         complex A = [v1, v2, v3]
 complex B = union(A, union([v2, v4], [v3, v4]))
     """
-
     ast = parse_ast(source_code)
-    env = eval_program(ast)
+    env, state = eval_program(ast)
 
-
-    for name in env.keys():
-        complex_ = lookup(env, name)
-        if isinstance(complex_, Complex):
-            print(f"{name}: {complex_}")
-            compute_homology(complex_)
+    B = lookup(env, "B")
+    if isinstance(B, Loc):
+        complex_B = access(state, B)
+        print(complex_B)
+        print(compute_homology(complex_B))
 
 if __name__ == "__main__":
     main()

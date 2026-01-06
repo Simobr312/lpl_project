@@ -99,23 +99,17 @@ def glue(K1: Complex, K2: Complex, mapping: Dict[VertexName, VertexName]) -> Com
     The mapping can be specified using any vertex from each equivalence class.
     Internally, it is normalized to canonical representatives.
     """
-
-
-
-    # --- Step 1: normalize mapping keys/values to representatives ---
     rep_map: Dict[VertexName, VertexName] = {}
     for a, b in mapping.items():
-        # normalize to representatives first
         ra = K1.uf.find(a)
         rb = K2.uf.find(b)
 
-        # now check representatives exist
+
         if ra not in K1.vertices:
             raise ValueError(f"glue(): vertex '{a}' (rep {ra}) is not in the first complex.")
         if rb not in K2.vertices:
             raise ValueError(f"glue(): vertex '{b}' (rep {rb}) is not in the second complex.")
 
-        # check for conflicting mappings
         if ra in rep_map and rep_map[ra] != rb:
             raise ValueError(
                 f"glue(): conflicting mapping for class '{ra}': {rep_map[ra]} vs {rb}"
@@ -123,25 +117,19 @@ def glue(K1: Complex, K2: Complex, mapping: Dict[VertexName, VertexName]) -> Com
 
         rep_map[ra] = rb
 
-
-    # --- Step 2: merge union-finds ---
     new_uf = K1.uf.merge(K2.uf)
 
-    # --- Step 3: extend mapping to entire equivalence classes ---
     for ra, rb in rep_map.items():
         class_a = K1.uf.get_classes()[ra]
         class_b = K2.uf.get_classes()[rb]
 
-        # Union representatives
         new_uf.union(ra, rb)
 
-        # Ensure full class collapse
         for x in class_a:
             new_uf.union(x, rb)
         for y in class_b:
             new_uf.union(ra, y)
 
-    # --- Step 4: canonicalize simplices ---
     new_simplices = set()
     for s in K1.maximal_simplices | K2.maximal_simplices:
         canon = frozenset(new_uf.find(v) for v in s)

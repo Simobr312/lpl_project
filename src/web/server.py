@@ -6,7 +6,7 @@ from fastapi.staticfiles import StaticFiles
 from parser import parse_ast
 from complex import Complex
 from core import eval_program, lookup, Loc
-from signal import signal, SIGALRM, alarm
+from homology import compute_homology
 
 app = FastAPI()
 
@@ -30,14 +30,19 @@ def run_program(data: ProgramInput):
                 value = state.store[dval.addr]
 
                 if isinstance(value, Complex):
+                    
                     complexes_json[name] = {
                         "dimension": value.dimension,
                         "simplices": [list(s) for s in value.maximal_simplices],
                         "vertices": list(value.vertices),
                         "classes": {
                             k: list(v) for k, v in value.classes.items()
+                        },
+                        "homology": {
+                            k: r for k, r in compute_homology(value).items()
                         }
                     }
+    
             except KeyError:
                 continue
 
