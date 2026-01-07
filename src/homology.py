@@ -1,9 +1,7 @@
 import numpy as numpy
-from typing import List, Set, FrozenSet, Dict, Tuple
+from typing import List, Dict, Tuple
 
 from parser import parse_ast
-from union_find import UnionFind
-from core import Loc, eval_program, lookup, access
 from complex import Complex, Simplex
 
 import numpy
@@ -111,6 +109,11 @@ def compute_homology(complex: Complex) -> Dict[int, int]:
         homology[k] = rank
     return homology
 
+
+def betti(complex: Complex, k: int) -> int:
+    """Returns the k-th Betti number of the complex."""
+    return homology_rank(complex, k)
+
 def print_homology(complex: Complex):
     """Computes the homology groups of the complex and returns the rank of each group."""
     
@@ -122,19 +125,19 @@ def print_homology(complex: Complex):
         rank = homology_rank(complex, k)
         print(f"Rank of H_{k}: {rank}")
 
-def main():
-    source_code = """
-        complex A = [v1, v2, v3]
-complex B = union(A, union([v2, v4], [v3, v4]))
-    """
-    ast = parse_ast(source_code)
-    env, state = eval_program(ast)
+# def main():
+#     source_code = """
+#         complex A = [v1, v2, v3]
+# complex B = union(A, union([v2, v4], [v3, v4]))
+#     """
+#     ast = parse_ast(source_code)
+#     env, state = eval_program(ast)
 
-    B = lookup(env, "B")
-    if isinstance(B, Loc):
-        complex_B = access(state, B)
-        print(complex_B)
-        print(compute_homology(complex_B))
+#     B = lookup(env, "B")
+#     if isinstance(B, Loc):
+#         complex_B = access(state, B)
+#         print(complex_B)
+#         print(compute_homology(complex_B))
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()

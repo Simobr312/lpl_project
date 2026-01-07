@@ -148,6 +148,13 @@ class ObservationalOperator(Operator):
             raise ValueError(
                 f"{self.name} does not accept a mapping"
             )
+        
+        if self.name == "Betti":
+            if len(args) != 2 or not isinstance(args[0], Complex) or not isinstance(args[1], int):
+                raise TypeError(
+                    f"{self.name} expects exactly one Complex and one integer argument"
+                )
+            return self.fn(args[0], args[1])
 
         if len(args) != 1 or not isinstance(args[0], Complex):
             raise TypeError(
@@ -177,7 +184,8 @@ class ArithmeticOperator(Operator):
         return self.fn(*args)
 
 from complex import union, glue, join, dimension, num_vertices
-from arithmetic import lnot, lor, land, add, sub, mul
+from arithmetic import lnot, lor, land, add, sub, mul, greater, less, leq, geq 
+from homology import betti
 
 # == Enviroment and State == #
 def initial_env_state() -> tuple[Environment, State]:
@@ -224,6 +232,24 @@ def initial_env_state() -> tuple[Environment, State]:
     )
     env = bind(env, "not",
         ArithmeticOperator("not", lnot, (int,), int)
+    )
+
+    env = bind(env, "greater",
+        ArithmeticOperator("greater", greater, (int, int), int)
+    )
+    env = bind(env, "less",
+        ArithmeticOperator("less", less, (int, int), int)
+    )
+
+    env = bind(env, "leq",
+        ArithmeticOperator("leq", leq, (int, int), int)
+    )
+    env = bind(env, "geq",
+        ArithmeticOperator("geq", geq, (int, int), int)
+    )
+
+    env = bind(env, "betti",
+        ObservationalOperator("Betti", betti, (Complex, int), int)
     )
 
     state = empty_state()
@@ -323,6 +349,9 @@ def execute_command(cmd: Command, env: Environment, state: State) -> tuple[Envir
             return env1, state2
         
         case VertexDecl(name):
+            if (name in state.vertices_order):
+                return env, state  # Vertex already exists
+            
             v, state1 = fresh_vertex(state)
             env1 = bind(env, name, v)
             return env1, state1

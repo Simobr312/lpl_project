@@ -47,6 +47,7 @@ The evaluation function $\mathcal{E} \llbracket e \rrbracket \langle \rho, \sigm
 
 ### Observation
 * **Dimension:** $\mathcal{E} \llbracket \text{dim}(e) \rrbracket = \max(|s| - 1)$ for all $s \in K$.
+* **Number of Vertices:** $\mathcal{E} \llbracket \text{num\_vert}(e) \rrbracket = |V|$ where $V$ is the set of vertices in $K$.
 * **Betti Numbers:** $\mathcal{E} \llbracket \text{betti}(e, n) \rrbracket$ computes the rank of the $n$-th homology group.
 
 ---

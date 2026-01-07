@@ -4,7 +4,7 @@ from typing import Dict, List, FrozenSet
 
 constructive_operations = {"union", "glue", "join", "dimension", "num_simplices", "num_vertices", "pick_vert"}
 observational_operations = {"dim", "num_vert" }
-other_operations = {"add", "sub", "mul", "not", "and", "or"}
+other_operations = {"add", "sub", "mul", "not", "and", "or", "greater", "less", "leq", "geq", "betti"}
 
 defined_operations = constructive_operations | observational_operations | other_operations
 op_regex = "|".join(defined_operations)

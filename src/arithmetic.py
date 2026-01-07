@@ -15,3 +15,15 @@ def sub(x: int, y: int) -> int:
 
 def mul(x: int, y: int) -> int:
     return x * y
+
+def greater(x: int, y: int) -> int:
+    return x > y
+
+def less(x: int, y: int) -> int:
+    return x < y
+
+def leq(x: int, y: int) -> int:
+    return x <= y
+
+def geq(x: int, y: int) -> int:
+    return x >= y
