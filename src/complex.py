@@ -144,6 +144,7 @@ def glue(K1: Complex, K2: Complex, mapping: Dict[VertexName, VertexName]) -> Com
 
 
 def join(K1: Complex, K2: Complex) -> Complex:
+    """Returns the join of two simplicial complexes."""
     new_uf = K1.uf.merge(K2.uf)
 
     new_simplices: Set[Simplex] = set()
@@ -162,16 +163,19 @@ def dimension(K: Complex) -> int:
     return K.dimension
 
 def num_simplices(K: Complex) -> int:
+    """Returns the number of simplices in the complex."""
     return len(K.simplices)
 
 def num_vertices(K: Complex) -> int:
+    """Returns the number of vertices in the complex."""
     return len(K.vertices)
 
 def pick_vertex(C: Complex, state) -> Complex:
+    """Picks a vertex from the complex according to insertion order."""
     if not C.vertices:
         raise ValueError("Cannot pick a vertex from an empty complex")
     
-    # pick vertex according to insertion order
+    # pick vertex to insertion order
     v = max(C.vertices, key=lambda x: state.vertices_order.get(x, float('inf')))
     
     new_uf = UnionFind[VertexName]()

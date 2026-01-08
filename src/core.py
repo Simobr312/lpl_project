@@ -43,22 +43,26 @@ def empty_state() -> State:
         )
 
 def allocate(state: State, value: MVal) -> tuple[Loc, State]:
+    """Allocates a new location in the store and assigns it the given value."""
     loc = Loc(state.next_loc)
     prev_store = state.store.copy()
     prev_store[loc.addr] = value
     return loc, State(store=prev_store, next_loc=state.next_loc + 1, vertices_order=state.vertices_order, new_vertex_id=state.new_vertex_id)
 
 def update(state: State, addr: int, value: MVal) -> State:
+    """Updates the value at the given location in the store."""
     prev_store = state.store.copy()
     prev_store[addr] = value
     return State(store=prev_store, next_loc=state.next_loc, vertices_order=state.vertices_order, new_vertex_id=state.new_vertex_id)
 
 def access(state: State, loc: Loc) -> MVal:
+    """Accesses the value at the given location in the store."""
     if loc.addr in state.store:
         return state.store[loc.addr]
     raise KeyError(f"Address '{loc.addr}' not found in store")
 
 def ensure_vertices_order(state: State, vertices: set[VertexName]) -> State:
+    """Ensures that all vertices in the given set have an order in the state's vertices_order."""
     vo = state.vertices_order.copy()
     next_index = len(vo)
 
@@ -75,6 +79,8 @@ def ensure_vertices_order(state: State, vertices: set[VertexName]) -> State:
     )
 
 def fresh_vertex(state: State, env: Environment) -> tuple[VertexName, State]:
+    """Generates a fresh vertex name not already in the state's vertices_order.
+        If the generated name exists, increments new_vertex_id and return the already existing vertex."""
     candidate : VertexName = f"__v{state.new_vertex_id}"
 
     if candidate in state.vertices_order:
@@ -119,6 +125,7 @@ class Operator(ABC):
 
     @abstractmethod
     def apply(self, args: list[Any], *, mapping=None, state: State) -> Any:
+        """Applies the operator to the given arguments. It will be specified in subclasses."""
         pass
 
 class ConstructiveOperator(Operator):
@@ -267,6 +274,8 @@ def initial_env_state() -> tuple[Environment, State]:
 from parser import ComplexLiteral, OpCall, FunCall
 
 def evaluate_expr(expr: Expr, env: Environment, state: State) -> EVal:
+    """Evaluates an expression in the given environment and state."""
+
     # Identifier
     if isinstance(expr, str):
         dval = lookup(env, expr)
@@ -341,6 +350,7 @@ def evaluate_expr(expr: Expr, env: Environment, state: State) -> EVal:
 
 from parser import ComplexDecl, Assign, IfCmd, WhileCmd
 def execute_command(cmd: Command, env: Environment, state: State) -> tuple[Environment, State]:
+    """Executes a command in the given environment and state."""
     match cmd:
         case ComplexDecl(name=name, expr=expr):
             complex_val = evaluate_expr(expr, env, state)
