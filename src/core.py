@@ -303,8 +303,7 @@ def evaluate_expr(expr: Expr, env: Environment, state: State) -> EVal:
     
     # Operator Call Expression
     if isinstance(expr, OpCall):
-        if isinstance(expr, OpCall):
-            op = lookup(env, expr.op)
+        op = lookup(env, expr.op)
 
         if not isinstance(op, Operator):
             raise ValueError(f"{expr.op} is not an operator")
