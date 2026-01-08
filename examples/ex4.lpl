@@ -1,6 +1,8 @@
+//Just a "crystal" with 2-dimensional holes
 complex X = [v0]
 
-while sub(num_vert(X), 136) do
+//You can change the number to whatever you want
+while leq(num_vert(X), 30) do
     vertex v
     complex Y = union([v0], v)
     while sub(num_vert(Y), 6) do
