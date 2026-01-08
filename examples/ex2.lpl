@@ -11,5 +11,5 @@ complex F4 = [B, C, D]
 // Union all faces to form the boundary
 complex TetBoundary = union(union(F1, F2), union(F3, F4))
 
-complex K1 = glue(Triangle, Tet) mapping {A1 -> B1}
-complex K = glue(K1, TetBoundary) mapping {A1 -> A} 
+complex K1 = glue(Triangle, Tet) mapping A1 -> B1
+complex K = glue(K1, TetBoundary) mapping A1 -> A 

@@ -55,6 +55,7 @@ grammar = fr"""
     NUMBER: /[0-9]+/
 
     COMMENT: "//" /[^\n]/*  "\n"
+    %ignore COMMENT
     WS: /[ \t\f\r\n]+/
     %ignore WS
 """

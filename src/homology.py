@@ -4,8 +4,6 @@ from typing import List, Dict, Tuple
 from parser import parse_ast
 from complex import Complex, Simplex
 
-import numpy
-
 def skeleton_map(complex: Complex) -> Dict[int, List[Simplex]]:
     """Returns a mapping from dimension k to the k-skeleton of the complex."""
     skeleton: Dict[int, List[Simplex]] = {}
@@ -124,20 +122,3 @@ def print_homology(complex: Complex):
     for k in range(0, complex.dimension + 1):
         rank = homology_rank(complex, k)
         print(f"Rank of H_{k}: {rank}")
-
-# def main():
-#     source_code = """
-#         complex A = [v1, v2, v3]
-# complex B = union(A, union([v2, v4], [v3, v4]))
-#     """
-#     ast = parse_ast(source_code)
-#     env, state = eval_program(ast)
-
-#     B = lookup(env, "B")
-#     if isinstance(B, Loc):
-#         complex_B = access(state, B)
-#         print(complex_B)
-#         print(compute_homology(complex_B))
-
-# if __name__ == "__main__":
-#     main()

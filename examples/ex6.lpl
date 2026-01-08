@@ -1,0 +1,17 @@
+complex X = [__v10]
+
+function has_a_hole(X) = betti(X, 1)
+
+while not(has_a_hole(X)) do
+    vertex v
+    X <- union(X, join(pick_vert(X), v))
+endwhile
+
+complex Y = [__v20]
+while not(has_a_hole(Y)) do
+    vertex v
+    Y <- union(Y, join(pick_vert(Y), v))
+endwhile
+
+Y <- glue (X, Y) mapping __v10 -> __v20, __v5 -> __v16, __v1 -> __v11
+Y <- union(Y, join([__v10], [__v0], [__v11], [__v19]))

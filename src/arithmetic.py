@@ -1,5 +1,5 @@
 def lnot(x: int) -> int:
-    return ~x
+    return 1 if x == 0 else 0
 
 def land(x: int, y: int) -> int:
     return x & y

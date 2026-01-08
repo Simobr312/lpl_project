@@ -71,6 +71,8 @@ $$
 and it induce a so called **simplicial map** between the simplicial complexes $K$ and $K'$.
 A **simplicial isomorphism** is a bijective simplicial map whose inverse is also a simplicial map.
 
+Given two isomophic simplicial complexes, it is possible to prove that their geometric realizations are homotopy equivalent topological spaces.
+
 **Definition:**
 Given two simplicial complexes $K_1, K_2$
 The **union** of $K_1$ and $K_2$ is the simplicial complex $K_3 = K_1 \cup K_2$ defined as:
@@ -112,6 +114,18 @@ Every simplicial complex $K$ such that $dim(K) = n$ can be embedded in $\mathbb{
 
 This theorem says that even if my visualizations try to be as good as possible, they can never be topologically faithful for complexes of dimension greater than 1.
 But for the complexes of dimension 1 (graphs) the visualization will be always topologically faithful.
+
+## Homology and Betti Numbers
+Homology is a way to associate a sequence of abelian groups or vector spaces to a simplicial complex, which can be used to study its "holes".
+
+It is not the case to go into details about homology theory here, but I will just define the Betti numbers which are the main observational operation of the language.
+
+**Definition(Betti Numbers):**
+The $n$-th Betti number $ \beta_n(K) $ of a simplicicial complex $K$ is defined as the rank of the $n$-th homology group $H_n(K)$:
+
+In this language we will use coefficients in $\mathbb{Z}/2\mathbb{Z}$ for homology, so the Betti numbers will count the number of n-dimensional holes in the simplicial complex which are "free" from torsion.
+
+The reason why I chose to use homology with coefficients in $\mathbb{Z}/2\mathbb{Z}$ is that it is computationally simpler and faster to compute, since $\mathbb{Z}/2\mathbb{Z}$ is a field and linear algebra techniques are easier than commutative algebra ones.
 
 ### References
 1. Wikipedia page of "Abstract Simplicial Complex": https://en.wikipedia.org/wiki/Abstract_simplicial_complex

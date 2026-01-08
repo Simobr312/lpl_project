@@ -50,6 +50,11 @@ The evaluation function $\mathcal{E} \llbracket e \rrbracket \langle \rho, \sigm
 * **Number of Vertices:** $\mathcal{E} \llbracket \text{num\_vert}(e) \rrbracket = |V|$ where $V$ is the set of vertices in $K$.
 * **Betti Numbers:** $\mathcal{E} \llbracket \text{betti}(e, n) \rrbracket$ computes the rank of the $n$-th homology group.
 
+The semantic of the arithmetic operations will not be discussed in detail, as they follow standard integer arithmetic semantics. But the syntax includes:
+* **Addition:** $\mathcal{E} \llbracket sum(a_1 + a_2) \rrbracket = a_1 + a_2$
+* **Subtraction:** $\mathcal{E} \llbracket sub(a_1 - a_2) \rrbracket = a_1 - a_2$
+* **Multiplication:** $\mathcal{E} \llbracket mul(a_1 * a_2) \rrbracket = a_1 * a_2$
+Other operators are **and**, **or**, **not**, **less**(<), **leq**($\leq$), **greater**(>), **geq**($\geq$), which are also used with the parentheses style syntax.
 ---
 
 ## 4. Semantics of Commands ($\mathcal{C}$)

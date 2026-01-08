@@ -74,13 +74,21 @@ def ensure_vertices_order(state: State, vertices: set[VertexName]) -> State:
         new_vertex_id=state.new_vertex_id
     )
 
-def fresh_vertex(state: State) -> tuple[VertexName, State]:
-    v : VertexName = f"__v{state.new_vertex_id}"
+def fresh_vertex(state: State, env: Environment) -> tuple[VertexName, State]:
+    candidate : VertexName = f"__v{state.new_vertex_id}"
+
+    if candidate in state.vertices_order:
+        return candidate, State(
+            store=state.store,
+            next_loc=state.next_loc,
+            vertices_order=state.vertices_order,
+            new_vertex_id=state.new_vertex_id + 1
+        )
 
     new_vertices_order = state.vertices_order.copy()
-    new_vertices_order[v] = len(new_vertices_order)   # 
+    new_vertices_order[candidate] = len(new_vertices_order)   # 
 
-    return v, State(
+    return candidate, State(
         store=state.store,
         next_loc=state.next_loc,
         vertices_order=new_vertices_order,
@@ -149,7 +157,7 @@ class ObservationalOperator(Operator):
                 f"{self.name} does not accept a mapping"
             )
         
-        if self.name == "Betti":
+        if self.name == "betti":
             if len(args) != 2 or not isinstance(args[0], Complex) or not isinstance(args[1], int):
                 raise TypeError(
                     f"{self.name} expects exactly one Complex and one integer argument"
@@ -249,7 +257,7 @@ def initial_env_state() -> tuple[Environment, State]:
     )
 
     env = bind(env, "betti",
-        ObservationalOperator("Betti", betti, (Complex, int), int)
+        ObservationalOperator("betti", betti, (Complex, int), int)
     )
 
     state = empty_state()
@@ -349,11 +357,9 @@ def execute_command(cmd: Command, env: Environment, state: State) -> tuple[Envir
             return env1, state2
         
         case VertexDecl(name):
-            if (name in state.vertices_order):
-                return env, state  # Vertex already exists
-            
-            v, state1 = fresh_vertex(state)
+            v, state1 = fresh_vertex(state, env)
             env1 = bind(env, name, v)
+
             return env1, state1
         
         case Assign(name=name, expr=expr):
@@ -393,7 +399,8 @@ def execute_command(cmd: Command, env: Environment, state: State) -> tuple[Envir
         case WhileCmd(cond, body):
             current_state = state
 
-            while True:
+            max_iterations = range(10000000)  # Prevent infinite loops
+            for _ in max_iterations:  
                 cond_val = evaluate_expr(cond, env, current_state)
 
                 if not isinstance(cond_val, int):
@@ -403,6 +410,8 @@ def execute_command(cmd: Command, env: Environment, state: State) -> tuple[Envir
                     return env, current_state
 
                 _, current_state = execute_command_seq(body, env, current_state)
+
+            raise RuntimeError("Maximum iterations reached in while loop, possible infinite loop")
 
         case FunctionDecl(name, params, body):
             closure = Closure(function=cmd, env=env)

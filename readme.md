@@ -46,9 +46,7 @@ The **dimension** of a simplicial complex $K$ is the maximum dimension among all
 - **Simplices** are represented as collections of vertices (a FrozenSet).
 - **Simplicial complexes** are represented as a collection of maximal simplices (those not contained in any larger simplex) along with a union-find data structure to manage vertex identifications during gluing operations.
 
-Semantic checks ensure that:
-- No simplex contains duplicate vertices.
-- Gluing operations are valid, meaning the complexes share the specified simplices.
+Semantic checks ensure that mo simplex contains duplicate vertices and gluing operations are valid, meaning the complexes share the specified simplices.
 
 
 ### Core Semantic Model
@@ -67,6 +65,7 @@ Values in the language are either:
 Operations are divided into:
 1. **Constructive Operations**: Create new simplicial complexes from existing ones.
 2. **Observational Operations**: Calculate properties of simplicial complexes.
+3. **Arithmetic Operations**: Basic integer arithmetic for control flow.
 
 ### Constructive Operations
 

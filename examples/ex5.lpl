@@ -1,0 +1,11 @@
+// This example is very important, it shows functions and
+// also observation on betti numbers
+
+complex X = [__v10]
+
+function has_a_hole(X) = betti(X, 1)
+
+while not(has_a_hole(X)) do
+    vertex v
+    X <- union(X, join(pick_vert(X), v))
+endwhile

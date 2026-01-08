@@ -1,12 +1,3 @@
-// Define a triangle
-complex T1 = [A, B, C]
-
-// Define an empty triangle
-complex S1 = [v1, v2]
-complex S2 = [v2, v3]
-complex S3 = [v3, v1]
-
-complex T2 = union(S1, union(S2, S3))
-
-// Glue T1 and T2 along one vertex (C -> v1)
-complex T_glued = glue(T1, T2) mapping {C -> v1}
+complex S1 = [A, B, C]
+complex S2 = union([A, B], [B, D], [D, A])
+complex K  = union(S1,S2)
